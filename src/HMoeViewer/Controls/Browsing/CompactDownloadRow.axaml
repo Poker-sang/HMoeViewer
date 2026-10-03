@@ -1,0 +1,98 @@
+<views:DownloadPostControl
+    x:Class="HMoeViewer.Controls.Browsing.CompactDownloadRow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:extraction="using:HMoeViewer.Extraction"
+    xmlns:local="using:HMoeViewer"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="core:PostItemViewModel">
+    <ListBoxItem
+        x:Name="ProgressIndicator"
+        Padding="0"
+        HorizontalContentAlignment="Stretch"
+        VerticalContentAlignment="Stretch"
+        Classes="progress-indicator"
+        Focusable="False">
+        <Border
+            x:Name="PreviewHost"
+            Padding="8,4"
+            Background="Transparent"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            ToolTip.CustomPopupPlacementCallback="{x:Static views:CoverTooltip.Place}"
+            ToolTip.Placement="Custom">
+            <ToolTip.Tip>
+                <ToolTip
+                    MaxWidth="600"
+                    MaxHeight="600"
+                    Padding="6">
+                    <StackPanel Spacing="{StaticResource SpacingSmall}">
+                        <local:ThumbnailImage
+                            MaxWidth="584"
+                            MaxHeight="400"
+                            DecodePixelWidth="0"
+                            FilePath="{Binding ThumbnailPath}"
+                            Stretch="Uniform"
+                            StretchDirection="DownOnly" />
+                        <TextBlock
+                            MaxWidth="584"
+                            Text="{Binding Metadata}"
+                            TextWrapping="Wrap" />
+                        <SelectableTextBlock
+                            MaxWidth="584"
+                            Text="{Binding Title}"
+                            TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding CacheStatusText}" />
+                    </StackPanel>
+                </ToolTip>
+            </ToolTip.Tip>
+            <Grid ColumnDefinitions="3*,5*,Auto" ColumnSpacing="{StaticResource SpacingSmall}">
+                <SelectableTextBlock
+                    VerticalAlignment="Center"
+                    FontSize="13"
+                    Text="{Binding Title}"
+                    TextTrimming="CharacterEllipsis" />
+                <Panel Grid.Column="1">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding !IsAccepted}"
+                        Opacity="0.65"
+                        Text="尚未收集下载链接" />
+                    <ItemsControl ItemsSource="{Binding DownloadLinks}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="extraction:Link">
+                                <views:DownloadLinkRow IsCompact="True" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Panel>
+                <CommandBar
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Classes="dense"
+                    DefaultLabelPosition="Collapsed"
+                    IsDynamicOverflowEnabled="False"
+                    OverflowButtonVisibility="Collapsed">
+                    <CommandBarButton
+                        Click="TemporaryAccept"
+                        Icon="{markup:SymbolIcon Checkmark,
+                                                 FontSize=14}"
+                        Label="接受" />
+                    <CommandBarButton
+                        Click="OpenArticle"
+                        Icon="{markup:SymbolIcon GlobeArrowUp,
+                                                 FontSize=14}"
+                        Label="原文" />
+                    <CommandBarButton
+                        Click="RemovePost"
+                        Icon="{markup:SymbolIcon Dismiss,
+                                                 FontSize=14}"
+                        Label="删除" />
+                </CommandBar>
+            </Grid>
+        </Border>
+    </ListBoxItem>
+</views:DownloadPostControl>

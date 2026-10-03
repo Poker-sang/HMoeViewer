@@ -1,0 +1,54 @@
+<Window
+    x:Class="HMoeViewer.ArticleReviewWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HMoeViewer.Controls"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    x:DataType="core:ArticleReviewViewModel"
+    Title="{Binding Title}"
+    Width="1000"
+    Height="850"
+    MinWidth="640"
+    MinHeight="480">
+    <DockPanel Margin="16" VerticalSpacing="{StaticResource SpacingMedium}">
+        <CommandBar
+            HorizontalAlignment="Left"
+            DefaultLabelPosition="Right"
+            DockPanel.Dock="Top"
+            IsDynamicOverflowEnabled="False"
+            OverflowButtonVisibility="Collapsed">
+            <CommandBarButton
+                Command="{Binding AcceptCommand}"
+                Icon="{markup:SymbolIcon Checkmark}"
+                IsVisible="{Binding IsDetailReview}"
+                Label="接受 → 下一篇" />
+            <CommandBarButton
+                Command="{Binding RejectCommand}"
+                Icon="{markup:SymbolIcon Dismiss}"
+                IsVisible="{Binding IsDetailReview}"
+                Label="不接受 → 下一篇" />
+            <CommandBarButton
+                Command="{Binding LoadCommand}"
+                Icon="{markup:SymbolIcon ArrowSync}"
+                Label="重试加载" />
+            <CommandBarButton
+                Click="OpenOriginal"
+                Icon="{markup:SymbolIcon GlobeArrowUp}"
+                Label="外部打开" />
+        </CommandBar>
+        <StackPanel DockPanel.Dock="Top" Spacing="{StaticResource SpacingSmall}">
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+            <ProgressBar
+                Height="3"
+                IsIndeterminate="True"
+                IsVisible="{Binding IsBusy}" />
+        </StackPanel>
+        <Border x:Name="ArticleSurface" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+            <controls:MarkdownBox
+                Article="{Binding Article}"
+                Markdown="{Binding Html}"
+                MarkdownForeground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Border>
+    </DockPanel>
+</Window>

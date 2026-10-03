@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<ApplicationIcon>Properties/logo.ico</ApplicationIcon>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+		<PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+			<IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+			<PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="FluentIcons.Avalonia" Version="2.1.343" />
+		<PackageReference Include="Markdown.Avalonia" Version="12.0.0-a3" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<ProjectReference Include="../HMoeViewer.Extraction/HMoeViewer.Extraction.csproj" />
+		<ProjectReference Include="../HMoeViewer.Downloads/HMoeViewer.Downloads.csproj" />
+		<ProjectReference Include="../HMoeData/HMoeData.csproj" />
+		<ProjectReference Include="../lib/SmoothScroll.Avalonia/src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj" />
+		<AvaloniaResource Include="Assets/logo.jpg" />
+		<None Include="../../ThirdParty/NOTICES.md" Link="ThirdParty/NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="../../ThirdParty/Pixeval.LICENSE" Link="ThirdParty/Pixeval.LICENSE" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="../lib/SmoothScroll.Avalonia/LICENSE.txt" Link="ThirdParty/SmoothScroll.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+</Project>

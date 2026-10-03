@@ -1,0 +1,37 @@
+﻿<UserControl
+    x:Class="HMoeViewer.Controls.Browsing.PostPreview"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:downloads="using:HMoeDownloadLinks"
+    xmlns:icons="using:FluentIcons.Avalonia"
+    xmlns:local="using:HMoeViewer"
+    xmlns:panels="using:HMoeViewer.Controls"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="core:PostItemViewModel">
+
+    <StackPanel Spacing="{StaticResource SpacingSmall}">
+        <local:ThumbnailImage
+            x:Name="TooltipCover"
+            MaxWidth="584"
+            MaxHeight="480"
+            HorizontalAlignment="Left"
+            DecodePixelWidth="0"
+            FilePath="{Binding ThumbnailPath}"
+            Stretch="Uniform"
+            StretchDirection="DownOnly" />
+        <TextBlock
+            MaxWidth="{Binding #TooltipCover.Bounds.Width}"
+            HorizontalAlignment="Left"
+            Text="{Binding Metadata}"
+            TextTrimming="CharacterEllipsis" />
+        <SelectableTextBlock
+            MaxWidth="{Binding #TooltipCover.Bounds.Width}"
+            MaxHeight="72"
+            HorizontalAlignment="Left"
+            Text="{Binding Title}"
+            TextTrimming="CharacterEllipsis"
+            TextWrapping="Wrap" />
+    </StackPanel>
+
+</UserControl>

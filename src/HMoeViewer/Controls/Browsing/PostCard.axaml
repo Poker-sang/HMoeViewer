@@ -1,0 +1,143 @@
+<views:BrowserControl
+    x:Class="HMoeViewer.Controls.Browsing.PostCard"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:ui="using:HMoeViewer.Markup"
+    xmlns:downloads="using:HMoeDownloadLinks"
+    xmlns:icons="using:FluentIcons.Avalonia"
+    xmlns:local="using:HMoeViewer"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    xmlns:panels="using:HMoeViewer.Controls"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="core:PostItemViewModel">
+    <ListBoxItem
+        x:Name="ProgressIndicator"
+        Padding="0"
+        HorizontalContentAlignment="Stretch"
+        VerticalContentAlignment="Stretch"
+        Classes="progress-indicator"
+        Focusable="False">
+        <Border
+            Padding="10"
+            Background="Transparent"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+            BorderThickness="1"
+            Classes="post-card"
+            CornerRadius="4"
+            DoubleTapped="PostDoubleTapped"
+            PointerMoved="CardPointerMoved"
+            Tapped="PostTapped"
+            ToolTip.CustomPopupPlacementCallback="{x:Static views:CoverTooltip.Place}"
+            ToolTip.Placement="Custom">
+            <ToolTip.Tip>
+                <ToolTip
+                    MaxWidth="600"
+                    MaxHeight="600"
+                    Padding="6"
+                    PointerWheelChanged="TooltipPointerWheelChanged">
+                    <views:PostPreview />
+                </ToolTip>
+            </ToolTip.Tip>
+            <Panel>
+                <Grid RowDefinitions="160,*,Auto" RowSpacing="{StaticResource SpacingSmall}">
+                    <Grid ClipToBounds="True">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Opacity="0.4"
+                            Text="无缩略图" />
+                        <local:ThumbnailImage FilePath="{Binding ThumbnailPath}" Stretch="UniformToFill" />
+                    </Grid>
+                    <SelectableTextBlock
+                        Grid.Row="1"
+                        Text="{Binding Title}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="Wrap" />
+                    <Grid
+                        Grid.Row="2"
+                        ColumnDefinitions="*,Auto"
+                        ColumnSpacing="{StaticResource SpacingSmall}">
+                        <Grid
+                            VerticalAlignment="Center"
+                            ColumnDefinitions="Auto,*"
+                            ColumnSpacing="{StaticResource SpacingSmall}">
+                            <Border
+                                x:Name="StateBadge"
+                                Padding="5,2"
+                                Background="{Binding State, Converter={x:Static views:PostCard.StateBackground}}"
+                                CornerRadius="3">
+                                <TextBlock
+                                    FontSize="11"
+                                    FontWeight="SemiBold"
+                                    Foreground="White"
+                                    Text="{Binding StateText}" />
+                            </Border>
+                            <TextBlock
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                FontSize="10"
+                                Opacity="0.6"
+                                Text="{Binding Metadata}"
+                                TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <CheckBox
+                            Grid.Column="1"
+                            IsChecked="{Binding IsSelected}"
+                            IsVisible="{Binding $parent[views:PostGridView].((core:MainViewModel)DataContext).IsBrief}" />
+                        <CommandBar
+                            Grid.Column="1"
+                            Classes="dense"
+                            DefaultLabelPosition="Collapsed"
+                            IsDynamicOverflowEnabled="False"
+                            IsVisible="{Binding $parent[views:PostGridView].((core:MainViewModel)DataContext).IsReview}"
+                            OverflowButtonVisibility="Collapsed">
+                            <CommandBarButton
+                                Click="TemporaryAccept"
+                                Icon="{markup:SymbolIcon Checkmark,
+                                                         FontSize=14}"
+                                Label="接受" />
+                            <CommandBarButton
+                                Click="SendToClient"
+                                Icon="{markup:SymbolIcon ShareIos,
+                                                         FontSize=14}"
+                                IsEnabled="{Binding IsAccepted}"
+                                IsVisible="{Binding $parent[views:PostGridView].((core:MainViewModel)DataContext).IsDownload}"
+                                Label="发送" />
+                            <CommandBarButton
+                                Click="RemovePost"
+                                Icon="{markup:SymbolIcon Dismiss,
+                                                         FontSize=14}"
+                                Label="{ui:EitherBinding {Binding $parent[views:PostGridView].((core:MainViewModel)DataContext).IsDownload}, 删除, 取消}" />
+                        </CommandBar>
+                        <Button
+                            Grid.Column="1"
+                            Padding="8,2"
+                            Command="{Binding $parent[views:PostGridView].((core:MainViewModel)DataContext).SelectPostCommand}"
+                            CommandParameter="{Binding}"
+                            IsVisible="{Binding $parent[views:PostGridView].((core:MainViewModel)DataContext).IsReselectMode}">
+                            <Button.Content>
+                                <icons:SymbolIcon FontSize="12" Symbol="Checkmark" />
+                            </Button.Content>
+                        </Button>
+                    </Grid>
+                </Grid>
+                <Border
+                    Margin="4"
+                    Padding="4"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Background="White"
+                    CornerRadius="10"
+                    ToolTip.Tip="{Binding CacheStatusText}">
+                    <Ellipse
+                        x:Name="CacheIndicator"
+                        Width="12"
+                        Height="12"
+                        Fill="{Binding CacheState, Converter={x:Static views:PostCard.CacheFill}}" />
+                </Border>
+            </Panel>
+        </Border>
+    </ListBoxItem>
+
+</views:BrowserControl>

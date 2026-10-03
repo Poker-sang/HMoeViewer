@@ -1,0 +1,37 @@
+﻿<UserControl
+    x:Class="HMoeViewer.Controls.Browsing.PostGridView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:downloads="using:HMoeDownloadLinks"
+    xmlns:icons="using:FluentIcons.Avalonia"
+    xmlns:local="using:HMoeViewer"
+    xmlns:panels="using:HMoeViewer.Controls"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="core:MainViewModel">
+
+    <ScrollViewer
+        x:Name="PostScroll"
+        HorizontalScrollBarVisibility="Disabled"
+        VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding DisplayedItems}" UseLayoutRounding="False">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <panels:VirtualizingAdaptiveGrid
+                        CacheLength="2"
+                        ItemSize="200"
+                        ItemSpacing="{StaticResource SpacingSmall}"
+                        ItemsAlignment="Stretch"
+                        LineSize="272"
+                        LineSpacing="{StaticResource SpacingSmall}" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:PostItemViewModel">
+                    <views:PostCard />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+
+</UserControl>

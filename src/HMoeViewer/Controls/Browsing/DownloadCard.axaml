@@ -1,0 +1,82 @@
+<views:DownloadPostControl
+    x:Class="HMoeViewer.Controls.Browsing.DownloadCard"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:downloads="using:HMoeDownloadLinks"
+    xmlns:extraction="using:HMoeViewer.Extraction"
+    xmlns:local="using:HMoeViewer"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="core:PostItemViewModel">
+    <ListBoxItem
+        x:Name="ProgressIndicator"
+        Padding="0"
+        HorizontalContentAlignment="Stretch"
+        VerticalContentAlignment="Stretch"
+        Classes="progress-indicator"
+        Focusable="False">
+        <Border
+            Padding="14"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+            BorderThickness="1"
+            CornerRadius="4">
+            <Grid ColumnDefinitions="180,*" ColumnSpacing="{StaticResource SpacingMedium}">
+                <local:ThumbnailImage
+                    Width="180"
+                    MaxHeight="220"
+                    VerticalAlignment="Top"
+                    FilePath="{Binding ThumbnailPath}"
+                    Stretch="Uniform"
+                    StretchDirection="DownOnly" />
+                <StackPanel Grid.Column="1" Spacing="{StaticResource SpacingSmall}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource SpacingSmall}">
+                        <StackPanel Spacing="{StaticResource SpacingSmall}">
+                            <SelectableTextBlock
+                                FontSize="17"
+                                FontWeight="SemiBold"
+                                Text="{Binding Title}"
+                                TextWrapping="Wrap" />
+                            <TextBlock Opacity="0.65" Text="{Binding Metadata}" />
+                        </StackPanel>
+                        <CommandBar
+                            Grid.Column="1"
+                            VerticalAlignment="Top"
+                            DefaultLabelPosition="Right"
+                            IsDynamicOverflowEnabled="False"
+                            OverflowButtonVisibility="Collapsed">
+                            <CommandBarButton
+                                Click="TemporaryAccept"
+                                Icon="{markup:SymbolIcon Checkmark}"
+                                Label="接受" />
+                            <CommandBarButton
+                                Click="OpenArticle"
+                                Icon="{markup:SymbolIcon GlobeArrowUp}"
+                                Label="原文" />
+                            <CommandBarButton
+                                Click="RemovePost"
+                                Icon="{markup:SymbolIcon Dismiss}"
+                                Label="删除" />
+                        </CommandBar>
+                    </Grid>
+                    <TextBlock
+                        IsVisible="{Binding !IsAccepted}"
+                        Opacity="0.65"
+                        Text="尚未收集下载链接，请先在详情筛选中接受此文章。" />
+                    <ItemsControl ItemsSource="{Binding DownloadLinks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="{StaticResource SpacingSmall}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="extraction:Link">
+                                <views:DownloadLinkRow />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </ListBoxItem>
+</views:DownloadPostControl>

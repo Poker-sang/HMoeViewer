@@ -1,0 +1,17 @@
+<Application
+    x:Class="HMoeViewer.App"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:smooth="using:SmoothScroll.Avalonia.Controls"
+    RequestedThemeVariant="Default">
+    <Application.Resources>
+        <x:Double x:Key="SpacingSmall">4</x:Double>
+        <x:Double x:Key="SpacingMedium">8</x:Double>
+    </Application.Resources>
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="/Themes/CommandBar.axaml" />
+        <StyleInclude Source="/Themes/ItemsViewListBoxStyles.axaml" />
+        <smooth:ScrollViewerSmoothTheme />
+    </Application.Styles>
+</Application>

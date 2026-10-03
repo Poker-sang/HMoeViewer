@@ -1,0 +1,176 @@
+<Window
+    x:Class="HMoeViewer.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:icons="using:FluentIcons.Avalonia"
+    xmlns:local="using:HMoeViewer"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="core:MainViewModel"
+    Title="HMoeViewer"
+    Width="1200"
+    Height="800"
+    MinWidth="760"
+    MinHeight="480"
+    Icon="avares://HMoeViewer/Assets/logo.jpg">
+    <Window.KeyBindings>
+        <KeyBinding Command="{Binding SaveCommand}" Gesture="Ctrl+S" />
+        <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
+    </Window.KeyBindings>
+    <DockPanel Margin="8" VerticalSpacing="{StaticResource SpacingMedium}">
+        <StackPanel DockPanel.Dock="Top" Spacing="{StaticResource SpacingMedium}">
+            <DockPanel HorizontalSpacing="{StaticResource SpacingMedium}">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    DockPanel.Dock="Left"
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    Text="HMoeViewer" />
+                <CommandBar
+                    VerticalAlignment="Center"
+                    DefaultLabelPosition="Right"
+                    DockPanel.Dock="Right"
+                    IsDynamicOverflowEnabled="False"
+                    OverflowButtonVisibility="Collapsed">
+                    <CommandBarButton
+                        Click="ChooseDatabase"
+                        Icon="{markup:SymbolIcon DatabaseArrowUp}"
+                        IsEnabled="{Binding !IsLoading}"
+                        Label="选择数据库" />
+                    <CommandBarButton
+                        Command="{Binding LoadCommand}"
+                        Icon="{markup:SymbolIcon ArrowSync}"
+                        Label="加载 / 刷新" />
+                </CommandBar>
+                <TextBox
+                    VerticalAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    PlaceholderText="current.db 路径"
+                    Text="{Binding DatabasePath}" />
+            </DockPanel>
+            <DockPanel HorizontalSpacing="{StaticResource SpacingMedium}">
+                <StackPanel
+                    DockPanel.Dock="Right"
+                    Orientation="Horizontal"
+                    Spacing="{StaticResource SpacingMedium}">
+                    <ComboBox
+                        x:Name="BrowseModePicker"
+                        Width="130"
+                        VerticalAlignment="Center"
+                        SelectedIndex="{Binding BrowseMode, Converter={x:Static local:BrowseModeConverter.Instance}}">
+                        <ComboBoxItem Content="初次筛选" />
+                        <ComboBoxItem Content="详情筛选" />
+                        <ComboBoxItem Content="下载后筛选" />
+                        <ComboBoxItem Content="未选择" />
+                        <ComboBoxItem Content="取消" />
+                        <ComboBoxItem Content="已删" />
+                        <ComboBoxItem Content="已选" />
+                    </ComboBox>
+                    <CommandBar
+                        VerticalAlignment="Center"
+                        DefaultLabelPosition="Right"
+                        IsDynamicOverflowEnabled="False"
+                        OverflowButtonVisibility="Collapsed">
+                        <CommandBarButton
+                            Command="{Binding SaveCommand}"
+                            Icon="{markup:SymbolIcon Save}"
+                            Label="保存" />
+                        <CommandBarButton
+                            Command="{Binding UndoCommand}"
+                            Icon="{markup:SymbolIcon ArrowUndo}"
+                            Label="撤回" />
+                        <CommandBarToggleButton
+                            Icon="{markup:SymbolIcon SaveSync}"
+                            IsChecked="{Binding AutoSave}"
+                            Label="自动保存" />
+                    </CommandBar>
+                </StackPanel>
+                <TextBox
+                    VerticalAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    PlaceholderText="搜索标题、作者、正文、摘要、分类…"
+                    Text="{Binding SearchText}">
+                    <TextBox.InnerLeftContent>
+                        <icons:SymbolIcon Margin="8,0,4,0" Symbol="Search" />
+                    </TextBox.InnerLeftContent>
+                </TextBox>
+            </DockPanel>
+            <DockPanel HorizontalSpacing="{StaticResource SpacingMedium}">
+                <StackPanel
+                    VerticalAlignment="Center"
+                    DockPanel.Dock="Right"
+                    Orientation="Horizontal"
+                    Spacing="{StaticResource SpacingMedium}">
+                    <ComboBox
+                        x:Name="DownloadLayoutPicker"
+                        Width="80"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsDownload}"
+                        SelectedIndex="{Binding DownloadLayout, Converter={x:Static local:DownloadLayoutConverter.Instance}}"
+                        ToolTip.Tip="下载后筛选的显示模式">
+                        <ComboBoxItem Content="标准" />
+                        <ComboBoxItem Content="卡片" />
+                        <ComboBoxItem Content="压缩" />
+                    </ComboBox>
+                    <CommandBar
+                        x:Name="BulkActions"
+                        VerticalAlignment="Center"
+                        DefaultLabelPosition="Right"
+                        IsDynamicOverflowEnabled="False"
+                        IsVisible="{Binding IsReview}"
+                        OverflowButtonVisibility="Collapsed">
+                        <CommandBarButton
+                            Command="{Binding CacheAllArticlesCommand}"
+                            Icon="{markup:SymbolIcon Database}"
+                            IsVisible="{Binding IsDetail}"
+                            Label="缓存全部正文" />
+                        <CommandBarButton
+                            Command="{Binding FetchAllDownloadsCommand}"
+                            Icon="{markup:SymbolIcon LinkMultiple}"
+                            IsVisible="{Binding IsDownload}"
+                            Label="获取全部链接" />
+                        <CommandBarButton
+                            Command="{Binding SendAllToClientCommand}"
+                            Icon="{markup:SymbolIcon SendCopy}"
+                            IsVisible="{Binding IsDownload}"
+                            Label="发送全部链接" />
+                    </CommandBar>
+                </StackPanel>
+                <StackPanel
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="{StaticResource SpacingMedium}">
+                    <TextBlock Text="{Binding AllCount, StringFormat='全部：{0}'}" />
+                    <TextBlock Text="{Binding SelectedCount, StringFormat='已选：{0}'}" />
+                    <TextBlock Text="{Binding MatchCount, StringFormat='当前结果：{0}'}" />
+                    <TextBlock
+                        Foreground="DarkOrange"
+                        IsVisible="{Binding HasChanges}"
+                        Text="未保存" />
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Bottom" Spacing="{StaticResource SpacingSmall}">
+            <TextBlock
+                FontSize="12"
+                Opacity="0.65"
+                Text="{Binding ModeHint}" />
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+            <ProgressBar
+                Height="3"
+                IsIndeterminate="True"
+                IsVisible="{Binding IsBusy}" />
+        </StackPanel>
+        <Panel>
+            <views:PostGridView IsVisible="{Binding IsCardLayout}" />
+            <views:DownloadListView IsVisible="{Binding IsDownloadListLayout}" />
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsVisible="{Binding !MatchCount}"
+                Opacity="0.6"
+                Text="没有匹配的条目" />
+        </Panel>
+    </DockPanel>
+</Window>

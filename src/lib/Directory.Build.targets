@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'SmoothScroll.Avalonia.Controls' Or '$(MSBuildProjectName)' == 'SmoothScroll.Avalonia.Interaction'">
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'SmoothScroll.Avalonia.Controls' Or '$(MSBuildProjectName)' == 'SmoothScroll.Avalonia.Interaction'">
+    <PackageVersion Update="Avalonia" Version="12.1.3" />
+    <Compile Include="$(MSBuildThisFileDirectory)SmoothScroll.Usings.cs" Link="SmoothScroll.Usings.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,79 @@
+<!-- Copyright (c) Pixeval. Licensed under GPL-3.0. -->
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:ui="using:HMoeViewer.Markup">
+
+    <Styles.Resources>
+        <ControlTheme
+            x:Key="{x:Type ListBoxItem}"
+            BasedOn="{StaticResource {x:Type ListBoxItem}}"
+            TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Panel>
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Background="{TemplateBinding Background}"
+                                Content="{TemplateBinding Content}" />
+                            <!--  Tint above the content so opaque cards also show the selection.  -->
+                            <Border
+                                Name="StateMask"
+                                CornerRadius="{StaticResource ControlCornerRadius}"
+                                IsHitTestVisible="False"
+                                IsVisible="False" />
+                            <Border
+                                Name="SelectionBorder"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{StaticResource ControlCornerRadius}"
+                                IsHitTestVisible="False"
+                                IsVisible="False" />
+                        </Panel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+
+            <Style Selector="^:pointerover /template/ Border#StateMask">
+                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+        </ControlTheme>
+    </Styles.Resources>
+
+    <!-- 初筛表示已选，详情表示已查看，下载表示已发送；四个永久状态页面不显示选中提示。 -->
+    <Style Selector="ListBoxItem.progress-indicator" x:DataType="core:PostItemViewModel">
+        <Setter
+            Property="IsSelected"
+            Value="{ui:EitherBinding {Binding $parent[Window].((core:MainViewModel)DataContext).IsBrief},
+                            {Binding IsSelected},
+                            {ui:EitherBinding {Binding $parent[Window].((core:MainViewModel)DataContext).IsDetail},
+                                {Binding IsViewed},
+                                {ui:EitherBinding {Binding $parent[Window].((core:MainViewModel)DataContext).IsDownload}, {Binding IsDownloaded}, {x:False}}}}" />
+    </Style>
+
+    <Style Selector="ListBoxItem.progress-indicator /template/ Border#SelectionBorder">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="ListBoxItem.progress-indicator:selected">
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+    </Style>
+
+    <Style Selector="ListBoxItem.progress-indicator:selected /template/ Border#StateMask">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="IsVisible" Value="True" />
+        <Setter Property="Opacity" Value="0.16" />
+    </Style>
+
+    <Style Selector="ListBoxItem.progress-indicator:selected:pointerover /template/ Border#StateMask">
+        <Setter Property="Opacity" Value="0.22" />
+    </Style>
+</Styles>

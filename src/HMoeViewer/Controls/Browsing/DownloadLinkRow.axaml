@@ -1,0 +1,84 @@
+<views:BrowserControl
+    x:Class="HMoeViewer.Controls.Browsing.DownloadLinkRow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:downloads="using:HMoeDownloadLinks"
+    xmlns:extraction="using:HMoeViewer.Extraction"
+    xmlns:local="using:HMoeViewer"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="extraction:Link"
+    x:Name="LinkRow">
+    <Panel>
+        <StackPanel IsVisible="{Binding !#LinkRow.IsCompact}" Spacing="{StaticResource SpacingSmall}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource SpacingSmall}">
+                <SelectableTextBlock
+                    VerticalAlignment="Center"
+                    Text="{Binding Url}"
+                    TextWrapping="Wrap" />
+                <CommandBar
+                    Grid.Column="1"
+                    DefaultLabelPosition="Right"
+                    IsDynamicOverflowEnabled="False"
+                    OverflowButtonVisibility="Collapsed">
+                    <CommandBarButton
+                        Click="CopyDownload"
+                        Icon="{markup:SymbolIcon Copy}"
+                        Label="复制" />
+                    <CommandBarButton
+                        Click="OpenDownload"
+                        Icon="{markup:SymbolIcon Link}"
+                        Label="打开" />
+                    <CommandBarButton
+                        Click="SendToClient"
+                        Icon="{markup:SymbolIcon ShareIos}"
+                        Label="发送" />
+                </CommandBar>
+            </Grid>
+            <SelectableTextBlock Text="{Binding ExtractionCode, StringFormat='提取码：{0}'}" TextWrapping="Wrap" />
+            <SelectableTextBlock Text="{Binding ArchivePassword, StringFormat='解压码：{0}'}" TextWrapping="Wrap" />
+        </StackPanel>
+        <Grid
+            MinHeight="28"
+            ColumnDefinitions="*,Auto,Auto,Auto"
+            ColumnSpacing="{StaticResource SpacingSmall}"
+            IsVisible="{Binding #LinkRow.IsCompact}">
+            <SelectableTextBlock
+                x:Name="CompactUrl"
+                VerticalAlignment="Center"
+                Classes="download-value"
+                FontSize="12"
+                Text="{Binding Url}"
+                TextTrimming="CharacterEllipsis" />
+            <TextBlock
+                x:Name="CompactExtractionCode"
+                Grid.Column="1"
+                MaxWidth="100"
+                VerticalAlignment="Center"
+                Classes="download-value"
+                FontSize="12"
+                Text="{Binding ExtractionCode, StringFormat='提取：{0}'}"
+                TextTrimming="CharacterEllipsis" />
+            <TextBlock
+                x:Name="CompactArchivePassword"
+                Grid.Column="2"
+                MaxWidth="140"
+                VerticalAlignment="Center"
+                Classes="download-value"
+                FontSize="12"
+                Text="{Binding ArchivePassword, StringFormat='解压：{0}'}"
+                TextTrimming="CharacterEllipsis" />
+            <CommandBar
+                Grid.Column="3"
+                VerticalAlignment="Center"
+                Classes="dense"
+                DefaultLabelPosition="Collapsed"
+                IsDynamicOverflowEnabled="False"
+                OverflowButtonVisibility="Collapsed">
+                <CommandBarButton Click="CopyDownload" Icon="{markup:SymbolIcon Copy, FontSize=14}" Label="复制" />
+                <CommandBarButton Click="OpenDownload" Icon="{markup:SymbolIcon Link, FontSize=14}" Label="打开" />
+                <CommandBarButton Click="SendToClient" Icon="{markup:SymbolIcon ShareIos, FontSize=14}" Label="发送" />
+            </CommandBar>
+        </Grid>
+    </Panel>
+</views:BrowserControl>

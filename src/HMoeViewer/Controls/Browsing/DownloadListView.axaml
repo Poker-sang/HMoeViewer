@@ -1,0 +1,44 @@
+<UserControl
+    x:Class="HMoeViewer.Controls.Browsing.DownloadListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:converters="using:Avalonia.Data.Converters"
+    xmlns:ui="using:HMoeViewer.Markup"
+    xmlns:downloads="using:HMoeDownloadLinks"
+    xmlns:local="using:HMoeViewer"
+    xmlns:panels="using:HMoeViewer.Controls"
+    xmlns:views="using:HMoeViewer.Controls.Browsing"
+    x:DataType="core:MainViewModel">
+    <UserControl.Resources>
+        <DataTemplate
+            x:Key="DefaultDownloadTemplate"
+            x:DataType="core:PostItemViewModel">
+            <views:DownloadCard />
+        </DataTemplate>
+        <DataTemplate
+            x:Key="CompactDownloadTemplate"
+            x:DataType="core:PostItemViewModel">
+            <views:CompactDownloadRow />
+        </DataTemplate>
+    </UserControl.Resources>
+    <ScrollViewer
+        x:Name="DownloadScroll"
+        HorizontalScrollBarVisibility="Disabled"
+        VerticalScrollBarVisibility="Auto">
+        <ItemsControl
+            x:Name="DownloadItems"
+            ItemTemplate="{ui:EitherBinding {Binding $parent[views:DownloadListView].((core:MainViewModel)DataContext).DownloadLayout, Converter={x:Static converters:ObjectConverters.Equal}, ConverterParameter={x:Static core:DownloadLayoutMode.Compact}}, {StaticResource CompactDownloadTemplate}, {StaticResource DefaultDownloadTemplate}}"
+            ItemsSource="{Binding DisplayedItems}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <panels:VirtualizingStackPanel
+                        Orientation="Vertical"
+                        Spacing="{StaticResource SpacingMedium}"
+                        ViewportOffset="{Binding $parent[ScrollViewer].Offset}"
+                        ViewportSize="{Binding $parent[ScrollViewer].Viewport}" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

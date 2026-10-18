@@ -51,7 +51,7 @@ public sealed class ResultStore
     }
 
     public bool IsComplete(int id) => _latest.TryGetValue(id, out var result)
-        && result.Status is "ok" && result.Links.Count > 0 && result.FormatVersion == LinkCollector.FormatVersion;
+                                      && result is { Status: "ok", Links.Count: > 0, FormatVersion: LinkCollector.FormatVersion };
 
     public async Task SaveAsync(PostResult result)
     {

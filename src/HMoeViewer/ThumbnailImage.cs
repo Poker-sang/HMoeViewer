@@ -81,7 +81,7 @@ public sealed class ThumbnailImage : Image
                     if (generation != Volatile.Read(ref _generation))
                         return null;
                     await using var stream = File.OpenRead(path);
-                    return decodeWidth > 0 ? Bitmap.DecodeToWidth(stream, decodeWidth) : new Bitmap(stream);
+                    return decodeWidth > 0 ? Bitmap.DecodeToWidth(stream, decodeWidth) : new(stream);
                 }
                 finally
                 {

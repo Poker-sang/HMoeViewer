@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net10.0</TargetFramework>
@@ -28,4 +28,14 @@
 		<None Include="../../ThirdParty/Pixeval.LICENSE" Link="ThirdParty/Pixeval.LICENSE" CopyToOutputDirectory="PreserveNewest" />
 		<None Include="../lib/SmoothScroll.Avalonia/LICENSE.txt" Link="ThirdParty/SmoothScroll.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
+	<Target Name="PublishBrowserWorker" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(SkipBrowserWorkerPublish)' != 'true'">
+		<!-- Build the browser host separately: its .NET runtime is shipped beside the native viewer. -->
+		<PropertyGroup>
+			<BrowserWorkerPublishDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(PublishDir)', 'browser-worker'))</BrowserWorkerPublishDirectory>
+		</PropertyGroup>
+		<MSBuild Projects="../HMoeViewer.BrowserWorker/HMoeViewer.BrowserWorker.csproj"
+		         Targets="Restore;Publish"
+		         Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=false;PublishTrimmed=false;PublishProfile=;SkipBrowserWorkerPublish=true;PublishDir=$(BrowserWorkerPublishDirectory)"
+		         RemoveProperties="PublishSingleFile;TrimmerSingleWarn" />
+	</Target>
 </Project>

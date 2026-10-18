@@ -21,8 +21,8 @@ public sealed class BaiduClientDownloadService(string profileDirectory) : IClien
         && (uri.AbsolutePath.StartsWith("/s/", StringComparison.Ordinal) || uri.AbsolutePath is "/share/init");
 
     public static bool IsDownloadProtocol(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri)
-        && uri.Scheme is "baiduyunguanjia" && uri.Host is "evoked-download"
-        && HasQueryValue(uri, "browserId") && HasQueryValue(uri, "seq");
+                                                         && uri is { Scheme: "baiduyunguanjia", Host: "evoked-download" }
+                                                         && HasQueryValue(uri, "browserId") && HasQueryValue(uri, "seq");
 
     private static bool HasQueryValue(Uri uri, string name) => uri.Query.TrimStart('?').Split('&').Any(part =>
         part.StartsWith(name + "=", StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(Uri.UnescapeDataString(part[(name.Length + 1)..])));

@@ -21,6 +21,9 @@ public interface IArticleReviewService
 
     void QueueCache(SelectionBatch batch, Post post);
 
+    /// <summary>Queues download extraction behind earlier body and download jobs.</summary>
+    Task<PostResult> QueueAcceptanceAsync(SelectionBatch batch, Post post, CancellationToken token = default);
+
     Task WaitForQueuedCacheAsync(CancellationToken token = default);
 
     Task<CachedArticle> GetArticleAsync(SelectionBatch batch, Post post, CancellationToken token = default);

@@ -150,7 +150,7 @@ public class HMoeSession : IAsyncDisposable
         var base64 = captchaData.ImgData;
 
         // 在浏览器中显示验证码
-        await _page!.EvaluateAsync(
+        _ = await _page!.EvaluateAsync(
             """
             (imgSrc) => {
                 const div = document.createElement('div');
@@ -175,7 +175,7 @@ public class HMoeSession : IAsyncDisposable
             captcha = Console.ReadLine();
         } while (string.IsNullOrWhiteSpace(captcha));
 
-        await _page.EvaluateAsync("() => document.getElementById('captcha-overlay')?.remove()");
+        _ = await _page.EvaluateAsync("() => document.getElementById('captcha-overlay')?.remove()");
 
         // 提交登录（使用参数化调用防止注入）
         var loginJson = await _page.EvaluateAsync<string>(
@@ -214,7 +214,7 @@ public class HMoeSession : IAsyncDisposable
 
         ConsoleLogger.Info("登录请求已接受，正在确认会话状态...");
 
-        await _page.ReloadAsync(new() { WaitUntil = WaitUntilState.NetworkIdle });
+        _ = await _page.ReloadAsync(new() { WaitUntil = WaitUntilState.NetworkIdle });
         await SyncCookiesToHttpClientAsync();
 
         var loggedInInfo = await FetchNonceInfoFromPageAsync();
@@ -315,7 +315,7 @@ public class HMoeSession : IAsyncDisposable
 
                 // 会话过期，刷新页面重新获取凭据
                 ConsoleLogger.Warning("会话已过期，正在刷新凭据...");
-                await _page!.ReloadAsync(new() { WaitUntil = WaitUntilState.NetworkIdle });
+                _ = await _page!.ReloadAsync(new() { WaitUntil = WaitUntilState.NetworkIdle });
                 _loginNonce = await FetchNonceFromPageAsync();
             }
             catch (Exception e)
@@ -395,7 +395,7 @@ public class HMoeSession : IAsyncDisposable
         }
         finally
         {
-            _downloadSemaphore.Release();
+            _ = _downloadSemaphore.Release();
         }
     }
 

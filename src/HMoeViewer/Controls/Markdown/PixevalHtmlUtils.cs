@@ -23,7 +23,7 @@ internal static partial class PixevalHtmlUtils
     public static Regex CreateTagstartPattern(IEnumerable<string> tags)
     {
         var tagList = string.Join("|", tags);
-        return new Regex(
+        return new(
             @$"<[\t ]*(?'tagname'{tagList})(?'attributes'[ \t][^>]*|/)?>",
             RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.Compiled | RegexOptions.IgnoreCase);
     }

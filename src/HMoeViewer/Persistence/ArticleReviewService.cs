@@ -29,6 +29,7 @@ public sealed class ArticleReviewService : IArticleReviewService, IAsyncDisposab
     private readonly CancellationTokenSource _shutdown = new();
     private readonly Channel<Func<Task>> _queue = Channel.CreateUnbounded<Func<Task>>();
     private readonly ConcurrentDictionary<string, byte> _queued = new();
+    private readonly ConcurrentDictionary<string, Lazy<Task<PostResult>>> _queuedAcceptances = new();
     private readonly Task _worker;
     private int _foreground;
     private readonly ConcurrentDictionary<string, Lazy<CacheOperation>> _operations = new();
@@ -44,9 +45,9 @@ public sealed class ArticleReviewService : IArticleReviewService, IAsyncDisposab
     {
         var key = GetArticleDirectory(batch, post.Id);
         // Completed attempts can be retried; active prefetch and foreground readers share one job.
-        if (_operations.TryGetValue(key, out var previous) && previous.IsValueCreated && previous.Value.Completion.IsCompleted)
-            _ = _operations.TryRemove(new KeyValuePair<string, Lazy<CacheOperation>>(key, previous));
-        return _operations.GetOrAdd(key, _ => new Lazy<CacheOperation>(() =>
+        if (_operations.TryGetValue(key, out var previous) && previous is { IsValueCreated: true, Value.Completion.IsCompleted: true })
+            _ = _operations.TryRemove(new(key, previous));
+        return _operations.GetOrAdd(key, _ => new(() =>
         {
             var operation = new CacheOperation();
             operation.Completion = Task.Run(() => CacheAsync(batch, post, operation.Ready, _shutdown.Token));
@@ -83,6 +84,42 @@ public sealed class ArticleReviewService : IArticleReviewService, IAsyncDisposab
                     _ = _queued.TryRemove(GetArticleDirectory(batch, post.Id), out _);
                 }
             });
+    }
+
+    public Task<PostResult> QueueAcceptanceAsync(SelectionBatch batch, Post post, CancellationToken token = default)
+    {
+        var key = GetArticleDirectory(batch, post.Id);
+        token.ThrowIfCancellationRequested();
+        var work = _queuedAcceptances.GetOrAdd(key, cacheKey => new(() =>
+        {
+            var completion = new TaskCompletionSource<PostResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!_queue.Writer.TryWrite(async () =>
+            {
+                try
+                {
+                    _ = completion.TrySetResult(await AcceptAsync(batch, post, _shutdown.Token).ConfigureAwait(false));
+                }
+                catch (OperationCanceledException)
+                {
+                    _ = completion.TrySetCanceled(_shutdown.Token);
+                }
+                catch (Exception ex)
+                {
+                    _ = completion.TrySetException(ex);
+                }
+                finally
+                {
+                    _ = _queuedAcceptances.TryRemove(key, out var removed);
+                }
+            }))
+            {
+                _ = _queuedAcceptances.TryRemove(key, out var removed);
+                _ = completion.TrySetException(new InvalidOperationException("正文后台队列已关闭。"));
+            }
+            return completion.Task;
+        }));
+        // A caller leaving its page must not cancel the shared background job.
+        return work.Value.WaitAsync(_shutdown.Token).WaitAsync(token);
     }
 
     public async Task WaitForQueuedCacheAsync(CancellationToken token = default)
@@ -188,7 +225,7 @@ public sealed class ArticleReviewService : IArticleReviewService, IAsyncDisposab
                         .Select(img.GetAttribute).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
                     if (string.IsNullOrWhiteSpace(raw))
                         continue;
-                    var url = new Uri(new Uri(post.Url), raw).AbsoluteUri;
+                    var url = new Uri(new(post.Url), raw).AbsoluteUri;
                     var name = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(url))) + ".img";
                     var imagePath = Path.Combine(folder, name);
                     images[url] = imagePath;
@@ -199,7 +236,7 @@ public sealed class ArticleReviewService : IArticleReviewService, IAsyncDisposab
                 foreach (var anchor in document.QuerySelectorAll("a[href]"))
                 {
                     var raw = anchor.GetAttribute("href");
-                    if (Uri.TryCreate(new Uri(post.Url), raw, out var uri) && uri.Scheme is "http" or "https")
+                    if (Uri.TryCreate(new(post.Url), raw, out var uri) && uri.Scheme is "http" or "https")
                         anchor.SetAttribute("href", uri.AbsoluteUri);
                     else
                         _ = anchor.RemoveAttribute("href");
@@ -223,7 +260,7 @@ public sealed class ArticleReviewService : IArticleReviewService, IAsyncDisposab
                 {
                     token.ThrowIfCancellationRequested();
                     var resource = url.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)
-                        ? new Resource(url, "image/inline", Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]))
+                        ? new(url, "image/inline", Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]))
                         : await fetcher.GetAsync(url, post.Url, token).ConfigureAwait(false);
                     if (!resource.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || resource.Bytes.Length is 0)
                         throw new InvalidDataException("服务器未返回有效图片。");

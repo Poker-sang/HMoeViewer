@@ -76,4 +76,18 @@
     <Style Selector="ListBoxItem.progress-indicator:selected:pointerover /template/ Border#StateMask">
         <Setter Property="Opacity" Value="0.22" />
     </Style>
+    <Style Selector="TextBlock.item-index">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.cover-index">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="6" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Background" Value="#B3000000" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
 </Styles>

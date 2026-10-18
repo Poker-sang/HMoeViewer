@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 
 namespace HMoeViewer.Core;
 
@@ -26,4 +27,16 @@ public enum TemporaryReviewStage
 
     /// <summary>至少一个下载链接已由服务确认成功发送到客户端；下载筛选用蓝框提示，不代表文件已完成下载。</summary>
     Downloaded = 8
+}
+
+public static class Ext
+{
+    extension(TemporaryReviewStage stage)
+    {
+        public bool Has(TemporaryReviewStage flag) => (stage & flag) == flag;
+
+        public bool IsDetailState => stage.Has(TemporaryReviewStage.DetailAccepted) || stage.Has(TemporaryReviewStage.Viewed);
+
+        public bool IsDownloadState => stage.Has(TemporaryReviewStage.DownloadAccepted) || stage.Has(TemporaryReviewStage.Downloaded);
+    }
 }

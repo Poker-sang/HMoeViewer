@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="src/HMoeViewer.BrowserWorker/HMoeViewer.BrowserWorker.csproj" />
   <Project Path="src/HMoeWebCrawler/HMoeWebCrawler.csproj" />
   <Project Path="src/HMoeViewer.Downloads/HMoeViewer.Downloads.csproj" />
   <Project Path="src/HMoeViewer.Extraction/HMoeViewer.Extraction.csproj" />

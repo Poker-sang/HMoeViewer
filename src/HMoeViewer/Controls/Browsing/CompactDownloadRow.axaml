@@ -49,50 +49,59 @@
                     </StackPanel>
                 </ToolTip>
             </ToolTip.Tip>
-            <Grid ColumnDefinitions="3*,5*,Auto" ColumnSpacing="{StaticResource SpacingSmall}">
-                <SelectableTextBlock
+            <DockPanel LastChildFill="True" HorizontalSpacing="{StaticResource SpacingSmall}">
+                <TextBlock
+                    Width="24"
                     VerticalAlignment="Center"
                     FontSize="13"
-                    Text="{Binding Title}"
-                    TextTrimming="CharacterEllipsis" />
-                <Panel Grid.Column="1">
-                    <TextBlock
+                    DockPanel.Dock="Left"
+                    Classes="item-index"
+                    Text="{Binding DisplayIndex}" />
+                <Grid ColumnDefinitions="3*,5*,Auto" ColumnSpacing="{StaticResource SpacingSmall}">
+                    <SelectableTextBlock
                         VerticalAlignment="Center"
-                        IsVisible="{Binding !IsAccepted}"
-                        Opacity="0.65"
-                        Text="尚未收集下载链接" />
-                    <ItemsControl ItemsSource="{Binding DownloadLinks}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="extraction:Link">
-                                <views:DownloadLinkRow IsCompact="True" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </Panel>
-                <CommandBar
-                    Grid.Column="2"
-                    VerticalAlignment="Center"
-                    Classes="dense"
-                    DefaultLabelPosition="Collapsed"
-                    IsDynamicOverflowEnabled="False"
-                    OverflowButtonVisibility="Collapsed">
-                    <CommandBarButton
-                        Click="TemporaryAccept"
-                        Icon="{markup:SymbolIcon Checkmark,
-                                                 FontSize=14}"
-                        Label="接受" />
-                    <CommandBarButton
-                        Click="OpenArticle"
-                        Icon="{markup:SymbolIcon GlobeArrowUp,
-                                                 FontSize=14}"
-                        Label="原文" />
-                    <CommandBarButton
-                        Click="RemovePost"
-                        Icon="{markup:SymbolIcon Dismiss,
-                                                 FontSize=14}"
-                        Label="删除" />
-                </CommandBar>
-            </Grid>
+                        FontSize="13"
+                        Text="{Binding Title}"
+                        TextTrimming="CharacterEllipsis" />
+                    <Panel Grid.Column="1">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding !IsAccepted}"
+                            Opacity="0.65"
+                            Text="尚未收集下载链接" />
+                        <ItemsControl ItemsSource="{Binding DownloadLinks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="extraction:Link">
+                                    <views:DownloadLinkRow IsCompact="True" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Panel>
+                    <CommandBar
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Classes="dense"
+                        DefaultLabelPosition="Collapsed"
+                        IsDynamicOverflowEnabled="False"
+                        OverflowButtonVisibility="Collapsed">
+                        <CommandBarButton
+                            Click="TemporaryAccept"
+                            Icon="{markup:SymbolIcon Checkmark,
+                                                     FontSize=14}"
+                            Label="接受" />
+                        <CommandBarButton
+                            Click="OpenArticle"
+                            Icon="{markup:SymbolIcon GlobeArrowUp,
+                                                     FontSize=14}"
+                            Label="原文" />
+                        <CommandBarButton
+                            Click="RemovePost"
+                            Icon="{markup:SymbolIcon Dismiss,
+                                                     FontSize=14}"
+                            Label="删除" />
+                    </CommandBar>
+                </Grid>
+            </DockPanel>
         </Border>
     </ListBoxItem>
 </views:DownloadPostControl>

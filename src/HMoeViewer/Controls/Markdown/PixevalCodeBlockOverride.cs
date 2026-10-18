@@ -57,7 +57,8 @@ internal sealed class PixevalFencedCodeBlockOverride() : BlockOverride2("CodeBlo
 
 internal sealed partial class PixevalIndentedCodeBlockOverride() : BlockOverride2("CodeBlocksWithoutLangEvaluator")
 {
-    private static readonly Regex NewlinesLeadingTrailing = new(@"^\n+|\n+\z", RegexOptions.Compiled);
+    [GeneratedRegex(@"^\n+|\n+\z", RegexOptions.Compiled)]
+    private static partial Regex NewlinesLeadingTrailing { get; }
 
     public override IEnumerable<DocumentElement>? Convert2(
         string text,
@@ -120,7 +121,7 @@ internal sealed class PixevalCodeBlockElement : DocumentElement
     {
         _lang = string.IsNullOrWhiteSpace(lang) ? null : lang;
         _code = code;
-        _control = new Lazy<Border>(CreateControl);
+        _control = new(CreateControl);
     }
 
     public override Control Control => _control.Value;
@@ -153,10 +154,10 @@ internal sealed class PixevalCodeBlockElement : DocumentElement
 
     private Border CreateControl()
     {
-        _textBlock = new CTextBlock
+        _textBlock = new()
         {
             TextWrapping = TextWrapping.NoWrap,
-            Cursor = new Cursor(StandardCursorType.Ibeam)
+            Cursor = new(StandardCursorType.Ibeam)
         };
         _textBlock.Classes.Add(CodeBlockClass);
         _textBlock.Content.Add(new CRun { Text = _code });

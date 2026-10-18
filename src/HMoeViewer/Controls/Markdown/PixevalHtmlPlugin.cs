@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Avalonia.Controls;
@@ -27,6 +28,14 @@ internal sealed partial class PixevalHtmlPlugin(Func<CachedArticle?> article) : 
         _syntaxHighlight = plugin.OfType<SyntaxHighlight>().FirstOrDefault();
     }
 
+    // Markdown.Avalonia.Html creates the inline types from its embedded tag table by name.
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CHyperlink))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CSpan))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CBold))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CLineBreak))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CItalic))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CUnderline))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CCode))]
     public void Setup(SetupInfo info)
     {
         if (_syntaxHighlight is null)

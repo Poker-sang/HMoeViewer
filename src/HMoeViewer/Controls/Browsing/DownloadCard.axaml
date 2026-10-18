@@ -22,13 +22,17 @@
             BorderThickness="1"
             CornerRadius="4">
             <Grid ColumnDefinitions="180,*" ColumnSpacing="{StaticResource SpacingMedium}">
-                <local:ThumbnailImage
-                    Width="180"
-                    MaxHeight="220"
-                    VerticalAlignment="Top"
-                    FilePath="{Binding ThumbnailPath}"
-                    Stretch="Uniform"
-                    StretchDirection="DownOnly" />
+                <Panel VerticalAlignment="Top">
+                    <local:ThumbnailImage
+                        Width="180"
+                        MaxHeight="220"
+                        FilePath="{Binding ThumbnailPath}"
+                        Stretch="Uniform"
+                        StretchDirection="DownOnly" />
+                    <Border Classes="cover-index">
+                        <TextBlock FontSize="11" Foreground="White" Text="{Binding DisplayIndex}" />
+                    </Border>
+                </Panel>
                 <StackPanel Grid.Column="1" Spacing="{StaticResource SpacingSmall}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource SpacingSmall}">
                         <StackPanel Spacing="{StaticResource SpacingSmall}">

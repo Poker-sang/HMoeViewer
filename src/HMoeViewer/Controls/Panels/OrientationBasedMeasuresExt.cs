@@ -4,7 +4,6 @@
 using Avalonia;
 using Avalonia.Layout;
 
-
 namespace HMoeViewer.Controls;
 
 internal static class OrientationBasedMeasuresExt
@@ -71,14 +70,14 @@ internal static class OrientationBasedMeasuresExt
 
         public Rect MinorMajorRect(double minor, double major, double minorSize, double majorSize) =>
             m.IsVertical
-                ? new Rect(minor, major, minorSize, majorSize)
+                ? new(minor, major, minorSize, majorSize)
                 : new Rect(major, minor, majorSize, minorSize);
 
         public Point MinorMajorPoint(double minor, double major) =>
-            m.IsVertical ? new Point(minor, major) : new Point(major, minor);
+            m.IsVertical ? new(minor, major) : new Point(major, minor);
 
         public Size MinorMajorSize(double minor, double major) =>
-            m.IsVertical ? new Size(minor, major) : new Size(major, minor);
+            m.IsVertical ? new(minor, major) : new Size(major, minor);
     }
 }
 

@@ -219,7 +219,7 @@ public class VirtualizingStackPanel : VirtualizingPanel, IScrollSnapPointsInfo
 
             var panelV = GetPanelV(availableSize);
             return Orientation is Orientation.Horizontal
-                ? new Size(_extentU, panelV)
+                ? new(_extentU, panelV)
                 : new Size(panelV, _extentU);
         }
         finally
@@ -415,7 +415,7 @@ public class VirtualizingStackPanel : VirtualizingPanel, IScrollSnapPointsInfo
         double viewportScale)
     {
         var viewport = IsUsableViewport(viewportOffset, viewportSize)
-            ? new Rect(viewportOffset.X, viewportOffset.Y, viewportSize.Width, viewportSize.Height)
+            ? new(viewportOffset.X, viewportOffset.Y, viewportSize.Width, viewportSize.Height)
             : effectiveViewport;
         return ToUnscaledViewport(viewport, viewportScale);
     }
@@ -428,7 +428,7 @@ public class VirtualizingStackPanel : VirtualizingPanel, IScrollSnapPointsInfo
             effectiveViewport.Height / viewportScale);
 
     private void RaiseSnapPointsChanged(Orientation orientation) =>
-        RaiseEvent(new RoutedEventArgs(orientation is Orientation.Horizontal
+        RaiseEvent(new(orientation is Orientation.Horizontal
             ? HorizontalSnapPointsChangedEvent
             : VerticalSnapPointsChangedEvent));
 
@@ -471,7 +471,7 @@ public class VirtualizingStackPanel : VirtualizingPanel, IScrollSnapPointsInfo
             var measuredSize = container.DesiredSize;
             if (!IsUsableSize(measuredSize))
             {
-                container.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                container.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
                 measuredSize = container.DesiredSize;
             }
 
@@ -767,7 +767,7 @@ public class VirtualizingStackPanel : VirtualizingPanel, IScrollSnapPointsInfo
         container.SetCurrentValue(IsVisibleProperty, false);
         if (!_recyclePool.TryGetValue(recycleKey, out var pool))
         {
-            pool = new Stack<Control>();
+            pool = new();
             _recyclePool.Add(recycleKey, pool);
         }
 
@@ -783,7 +783,7 @@ public class VirtualizingStackPanel : VirtualizingPanel, IScrollSnapPointsInfo
             availableV = double.PositiveInfinity;
 
         return Orientation is Orientation.Horizontal
-            ? new Size(double.PositiveInfinity, availableV)
+            ? new(double.PositiveInfinity, availableV)
             : new Size(availableV, double.PositiveInfinity);
     }
 

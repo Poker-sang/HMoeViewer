@@ -33,7 +33,7 @@ public partial class MainViewModel
         var item = _allItems.First(item => item.Post.Id == change.PostId);
         _undoChanges.RemoveAt(_undoChanges.Count - 1);
         // Undo is itself an auditable transition, but must not become the next undo target.
-        _pendingHistory.Add(new SelectionChange(Guid.NewGuid(), change.PostId, change.After, change.Before,
+        _pendingHistory.Add(new(Guid.NewGuid(), change.PostId, change.After, change.Before,
             DateTimeOffset.UtcNow, change.OperationId, change.AfterReviewStage, change.BeforeReviewStage));
         _isUndoing = true;
         try

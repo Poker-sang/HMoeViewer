@@ -1,448 +1,178 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using HMoeData.Models;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using SQLite;
 
 namespace HMoeData.Persistence;
 
-public static class HMoeDbStore
+public static partial class HMoeDbStore
 {
-    private static readonly ValueConverter<Uri, string> _UriConverter = new(
-        uri => uri.ToString(),
-        value => new Uri(value, UriKind.RelativeOrAbsolute));
-
     public sealed record SavePostsOptions(DateTimeOffset WriteTime, bool ContinueLatestBatch);
 
     public sealed class PostLookup : IDisposable
     {
-        private readonly PostDbContext? _context;
+        private readonly SQLiteConnection? _connection;
 
         internal PostLookup(string databasePath)
         {
             if (!File.Exists(databasePath))
                 return;
-
-            _context = CreatePostDbContext(databasePath);
-            _ = _context.Database.EnsureCreated();
+            _connection = OpenConnection(databasePath);
+            EnsureSchema(_connection);
         }
 
-        public int Count => _context?.Posts.Count() ?? 0;
+        public int Count => _connection?.Table<PostRow>().Count() ?? 0;
 
-        public bool Exists(int postId) => _context?.Posts.Any(post => post.Id == postId) ?? false;
+        public bool Exists(int postId) => _connection?.Find<PostRow>(postId) is not null;
 
-        public void Dispose() => _context?.Dispose();
+        public void Dispose() => _connection?.Dispose();
     }
 
     public static PostLookup OpenPostLookup(string databasePath) => new(databasePath);
 
-    public static IEnumerable<Post> LoadAllPosts(string databasePath)
+    public static IEnumerable<Post> LoadAllPosts(string databasePath) => LoadPosts(databasePath, false);
+
+    public static IEnumerable<Post> LoadNewPosts(string databasePath) => LoadPosts(databasePath, true);
+
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(PostRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AuthorRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ThumbnailRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(TagRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CategoryRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(MedalRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(RoleRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(PostTagRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CategoryPostRow))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AuthorMedalRow))]
+    private static IReadOnlyList<Post> LoadPosts(string databasePath, bool latestOnly)
     {
         if (!File.Exists(databasePath))
-            yield break;
-
-        using var context = CreatePostDbContext(databasePath);
-        _ = context.Database.EnsureCreated();
-
-        foreach (var post in CreateLoadPostsQuery(context).OrderByDescending(post => post.DateUnixTimeSeconds))
-            yield return post;
+            return [];
+        using var connection = OpenConnection(databasePath, readOnly: true);
+        IReadOnlyList<Post> posts = [];
+        // Read all relation tables from one snapshot while the crawler may be writing.
+        connection.RunInTransaction(() => posts = ReadPosts(connection, latestOnly));
+        return posts;
     }
 
-    public static IEnumerable<Post> LoadNewPosts(string databasePath)
+    private static IReadOnlyList<Post> ReadPosts(SQLiteConnection connection, bool latestOnly)
     {
-        if (!File.Exists(databasePath))
-            yield break;
-
-        using var context = CreatePostDbContext(databasePath);
-        _ = context.Database.EnsureCreated();
-
-        var latestWriteTime = context.Posts.Max(post => (long?)post.WriteTimeUnixTimeSeconds);
-        if (latestWriteTime is null)
-            yield break;
-
-        foreach (var post in CreateLoadPostsQuery(context)
-                     .Where(post => post.WriteTimeUnixTimeSeconds == latestWriteTime.Value)
-                     .OrderByDescending(post => post.DateUnixTimeSeconds))
-            yield return post;
-    }
-
-    private static IQueryable<Post> CreateLoadPostsQuery(PostDbContext context)
-    {
-        return context.Posts
-            .AsNoTracking()
-            .AsSplitQuery()
-            .Include(post => post.DbAuthor)
-                .ThenInclude(author => author!.DbRole)
-            .Include(post => post.DbAuthor)
-                .ThenInclude(author => author!.DbMedals)
-            .Include(post => post.DbThumbnail)
-            .Include(post => post.DbTags)
-            .Include(post => post.DbCats);
-    }
-
-    public static async Task SaveSelectionsAsync(
-        string databasePath,
-        IEnumerable<(int Id, PostSelectionState State, DateTimeOffset WriteTime)> selections,
-        CancellationToken token = default)
-    {
-        var options = new DbContextOptionsBuilder<PostDbContext>()
-            .UseSqlite(new SqliteConnectionStringBuilder
-            {
-                DataSource = databasePath,
-                Mode = SqliteOpenMode.ReadWrite
-            }.ToString())
-            .Options;
-        await using var context = new PostDbContext(options);
-        await using var transaction = await context.Database.BeginTransactionAsync(token).ConfigureAwait(false);
-        foreach (var selection in selections)
+        var query = connection.Table<PostRow>();
+        if (latestOnly)
         {
-            // Viewer edits must never change crawler timestamps or create a new batch.
-            var updated = await context.Posts
-                .Where(post => post.Id == selection.Id && post.WriteTime == selection.WriteTime)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(post => post.IsSelected, selection.State), token)
-                .ConfigureAwait(false);
-            if (updated is not 1)
-                throw new InvalidOperationException($"条目 {selection.Id} 的写入批次已变化或不存在，未保存选择状态。");
+            var latest = query.OrderByDescending(row => row.WriteTimeUnixTimeSeconds).FirstOrDefault();
+            if (latest is null)
+                return [];
+            var seconds = latest.WriteTimeUnixTimeSeconds;
+            query = query.Where(row => row.WriteTimeUnixTimeSeconds == seconds);
         }
-
-        await transaction.CommitAsync(token).ConfigureAwait(false);
-    }
-
-    public static void SavePosts(string databasePath, IEnumerable<Post> posts, SavePostsOptions options)
-    {
-        EnsureDirectory(databasePath);
-
-        using var context = CreatePostDbContext(databasePath);
-        _ = context.Database.EnsureCreated();
-
-        var postBatch = posts
-            .DistinctBy(post => post.Id)
-            .ToArray();
-        if (postBatch.Length is 0)
-            return;
-
-        if (options.ContinueLatestBatch)
-            RefreshLatestBatchWriteTime(context, options.WriteTime);
-
-        var postIds = DistinctKeys(postBatch.Select(post => post.Id));
-        var authorIds = DistinctKeys(postBatch.Select(post => post.Author.Id));
-        var roleNames = DistinctKeys(postBatch.Select(post => post.Author.Role.Name), StringComparer.Ordinal);
-        var tagIds = DistinctKeys(postBatch.SelectMany(post => post.Tags).Select(tag => tag.Id));
-        var categoryIds = DistinctKeys(postBatch.SelectMany(post => post.Cats).Select(category => category.Id));
-        var medalIds = DistinctKeys(postBatch.SelectMany(post => post.Author.Medals).Select(medal => medal.Id), StringComparer.Ordinal);
-
-        var roles = LoadDictionaryByKeys(context.Roles, roleNames, role => role.Name, StringComparer.Ordinal);
-        var medals = LoadDictionaryByKeys(context.Medals, medalIds, medal => medal.Id, StringComparer.Ordinal);
-        var authors = LoadDictionaryByKeys(context.Authors.Include(author => author.DbMedals), authorIds, author => author.Id);
-        var thumbnails = LoadDictionaryByKeys(context.Thumbnails, postIds, thumbnail => thumbnail.DbPostId);
-        var tags = LoadDictionaryByKeys(context.Tags, tagIds, tag => tag.Id);
-        var categories = LoadDictionaryByKeys(context.Categories, categoryIds, category => category.Id);
-        var storedPosts = LoadDictionaryByKeys(
-            context.Posts
-                .Include(post => post.DbTags)
-                .Include(post => post.DbCats),
-            postIds,
-            post => post.Id);
-
-        foreach (var post in postBatch)
-            UpsertPost(context, post, options.WriteTime, roles, medals, authors, thumbnails, tags, categories, storedPosts);
-
-        _ = context.SaveChanges();
-    }
-
-    private static void RefreshLatestBatchWriteTime(PostDbContext context, DateTimeOffset writeTime)
-    {
-        var latestWriteTime = context.Posts.Max(post => (long?)post.WriteTimeUnixTimeSeconds);
-        if (latestWriteTime is null)
-            return;
-
-        var writeTimeUnixTimeSeconds = writeTime.ToUnixTimeSeconds();
-        _ = context.Posts
-            .Where(post => post.WriteTimeUnixTimeSeconds == latestWriteTime.Value)
-            .ExecuteUpdate(setters => setters
-                .SetProperty(post => post.WriteTime, writeTime)
-                .SetProperty(post => post.WriteTimeUnixTimeSeconds, writeTimeUnixTimeSeconds));
-    }
-
-    private static void UpsertPost(
-        PostDbContext context,
-        Post source,
-        DateTimeOffset writeTime,
-        Dictionary<string, Role> roles,
-        Dictionary<string, Medal> medals,
-        Dictionary<int, Author> authors,
-        Dictionary<int, Thumbnail> thumbnails,
-        Dictionary<int, Tag> tags,
-        Dictionary<int, Category> categories,
-        Dictionary<int, Post> storedPosts)
-    {
-        var role = UpsertRole(context, source.Author.Role, roles);
-        var author = UpsertAuthor(context, source.Author, role, medals, authors);
-        var thumbnail = UpsertThumbnail(context, source.Id, source.Thumbnail, thumbnails);
-        var resolvedTags = ResolveTags(context, source.Tags, tags);
-        var resolvedCategories = ResolveCategories(context, source.Cats, categories);
-        PreparePostForStore(source, author, thumbnail, writeTime);
-        source.Tags = resolvedTags;
-        source.Cats = resolvedCategories;
-
-        var target = GetOrAddTrackedEntity(context, source, source.Id, storedPosts);
-        target.DbAuthor = author;
-        target.DbAuthorId = author.Id;
-        target.DbThumbnail = thumbnail;
-
-        ReplaceCollection(target.DbTags, resolvedTags, tag => tag.Id);
-        ReplaceCollection(target.DbCats, resolvedCategories, category => category.Id);
-    }
-
-    private static void PreparePostForStore(Post source, Author author, Thumbnail thumbnail, DateTimeOffset writeTime)
-    {
-        source.DateUnixTimeSeconds = source.Date.ToUnixTimeSeconds();
-        source.ModifiedDateUnixTimeSeconds = source.ModifiedDate.ToUnixTimeSeconds();
-        ApplyWriteTime(source, writeTime);
-        source.DbAuthor = author;
-        source.DbAuthorId = author.Id;
-        source.DbThumbnail = thumbnail;
-    }
-
-    private static void ApplyWriteTime(Post target, DateTimeOffset writeTime)
-    {
-        target.WriteTime = writeTime;
-        target.WriteTimeUnixTimeSeconds = writeTime.ToUnixTimeSeconds();
-    }
-
-    private static Role UpsertRole(PostDbContext context, Role source, Dictionary<string, Role> roles)
-    {
-        return GetOrAddTrackedEntity(context, source, source.Name, roles);
-    }
-
-    private static Author UpsertAuthor(
-        PostDbContext context,
-        Author source,
-        Role role,
-        Dictionary<string, Medal> medals,
-        Dictionary<int, Author> authors)
-    {
-        PrepareAuthorForStore(source, role);
-        var resolvedMedals = ResolveMedals(context, source.Medals, medals);
-        source.Medals = resolvedMedals;
-
-        var target = GetOrAddTrackedEntity(context, source, source.Id, authors);
-        target.DbRole = role;
-        target.DbRoleName = role.Name;
-
-        ReplaceCollection(target.DbMedals, resolvedMedals, medal => medal.Id);
-        return target;
-    }
-
-    private static void PrepareAuthorForStore(Author source, Role role)
-    {
-        source.DbRole = role;
-        source.DbRoleName = role.Name;
-    }
-
-    private static Thumbnail UpsertThumbnail(PostDbContext context, int postId, Thumbnail source, Dictionary<int, Thumbnail> thumbnails)
-    {
-        source.DbPostId = postId;
-
-        return GetOrAddTrackedEntity(context, source, postId, thumbnails);
-    }
-
-    private static Tag UpsertTag(PostDbContext context, Tag source, Dictionary<int, Tag> tags)
-    {
-        return GetOrAddTrackedEntity(context, source, source.Id, tags);
-    }
-
-    private static Category UpsertCategory(PostDbContext context, Category source, Dictionary<int, Category> categories)
-    {
-        return GetOrAddTrackedEntity(context, source, source.Id, categories);
-    }
-
-    private static Medal UpsertMedal(PostDbContext context, Medal source, Dictionary<string, Medal> medals)
-    {
-        return GetOrAddTrackedEntity(context, source, source.Id, medals);
-    }
-
-    private static void CopyScalarValues<TEntity>(DbContext context, TEntity target, TEntity source)
-        where TEntity : class
-    {
-        if (!ReferenceEquals(target, source))
-            context.Entry(target).CurrentValues.SetValues(source);
-    }
-
-    private static Medal[] ResolveMedals(PostDbContext context, IEnumerable<Medal> medals, Dictionary<string, Medal> storedMedals)
-    {
-        return [.. medals.Select(medal => UpsertMedal(context, medal, storedMedals))];
-    }
-
-    private static Tag[] ResolveTags(PostDbContext context, IEnumerable<Tag> tags, Dictionary<int, Tag> storedTags)
-    {
-        return [.. tags.Select(tag => UpsertTag(context, tag, storedTags))];
-    }
-
-    private static Category[] ResolveCategories(PostDbContext context, IEnumerable<Category> categories, Dictionary<int, Category> storedCategories)
-    {
-        return [.. categories.Select(category => UpsertCategory(context, category, storedCategories))];
-    }
-
-    private static TEntity GetOrAddTrackedEntity<TEntity, TKey>(
-        DbContext context,
-        TEntity source,
-        TKey key,
-        Dictionary<TKey, TEntity> trackedEntities)
-        where TEntity : class
-        where TKey : notnull
-    {
-        if (!trackedEntities.TryGetValue(key, out var target))
+        var rows = query.OrderByDescending(row => row.DateUnixTimeSeconds).ToList();
+        if (rows.Count is 0)
+            return [];
+        var postIds = rows.Select(row => row.Id).ToList();
+        var authorIds = rows.Select(row => row.DbAuthorId).Distinct().ToList();
+        var roles = connection.Table<RoleRow>().ToDictionary(row => row.Name, row => new Role { Name = row.Name, Color = row.Color });
+        var authors = connection.Table<AuthorRow>().Where(row => authorIds.Contains(row.Id)).ToDictionary(row => row.Id, row => new Author
         {
-            target = source;
-            _ = context.Add(target);
-            trackedEntities[key] = target;
+            Id = row.Id, Uid = row.Uid, Name = row.Name, Url = Uri(row.Url), AvatarUrl = Uri(row.AvatarUrl),
+            Des = row.Des, CommentsCount = row.CommentsCount, PostsCount = row.PostsCount, Point = row.Point,
+            FollowersCount = row.FollowersCount, FansCount = row.FansCount, Medals = [], Role = roles[row.DbRoleName]
+        });
+        var thumbnails = connection.Table<ThumbnailRow>().Where(row => postIds.Contains(row.DbPostId)).ToDictionary(row => row.DbPostId, row => new Thumbnail
+        {
+            DbPostId = row.DbPostId, Id = row.Id, Width = row.Width, Height = row.Height, Url = Uri(row.Url), Visible = row.Visible
+        });
+        var posts = rows.Select(row => new Post
+        {
+            Id = row.Id, Title = row.Title, Url = Uri(row.Url), Slug = row.Slug, CommentsCount = row.CommentsCount,
+            Type = row.Type, Excerpt = row.Excerpt, Content = row.Content, Views = row.Views,
+            Date = Time(row.Date), ModifiedDate = Time(row.ModifiedDate), WriteTime = Time(row.WriteTime),
+            DateUnixTimeSeconds = row.DateUnixTimeSeconds, ModifiedDateUnixTimeSeconds = row.ModifiedDateUnixTimeSeconds,
+            WriteTimeUnixTimeSeconds = row.WriteTimeUnixTimeSeconds, IsSelected = (PostSelectionState) row.IsSelected,
+            Author = authors[row.DbAuthorId], Thumbnail = thumbnails[row.Id], Tags = [], Cats = []
+        }).ToList();
+        var byId = posts.ToDictionary(post => post.Id);
+        var tagLinks = connection.Table<PostTagRow>().Where(row => postIds.Contains(row.PostId)).ToList();
+        var tagIds = tagLinks.Select(row => row.DbTagsId).Distinct().ToList();
+        var tags = connection.Table<TagRow>().Where(row => tagIds.Contains(row.Id)).ToDictionary(row => row.Id, row => new Tag
+        {
+            Id = row.Id, Name = row.Name, Slug = row.Slug, Url = Uri(row.Url), Description = row.Description, Count = row.Count
+        });
+        foreach (var link in tagLinks)
+            byId[link.PostId].DbTags.Add(tags[link.DbTagsId]);
+        var categoryLinks = connection.Table<CategoryPostRow>().Where(row => postIds.Contains(row.PostId)).ToList();
+        var categoryIds = categoryLinks.Select(row => row.DbCatsId).Distinct().ToList();
+        var categories = connection.Table<CategoryRow>().Where(row => categoryIds.Contains(row.Id)).ToDictionary(row => row.Id, row => new Category
+        {
+            Id = row.Id, ParentId = row.ParentId, Name = row.Name, Slug = row.Slug,
+            Uuid = row.Uuid, Url = Uri(row.Url), Description = row.Description
+        });
+        foreach (var link in categoryLinks)
+            byId[link.PostId].DbCats.Add(categories[link.DbCatsId]);
+        var medalLinks = connection.Table<AuthorMedalRow>().Where(row => authorIds.Contains(row.AuthorId)).ToList();
+        var medalIds = medalLinks.Select(row => row.DbMedalsId).Distinct().ToList();
+        var medals = connection.Table<MedalRow>().Where(row => medalIds.Contains(row.Id)).ToDictionary(row => row.Id, row => new Medal
+        {
+            Id = row.Id, ImgUrl = Uri(row.ImgUrl), Name = row.Name, Des = row.Des, AttrTitle = row.AttrTitle
+        });
+        foreach (var link in medalLinks)
+            authors[link.AuthorId].DbMedals.Add(medals[link.DbMedalsId]);
+        foreach (var post in posts)
+            post.Thumbnail.DbPost = post;
+        return posts;
+    }
+
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(PostSelectionRow))]
+    public static Task SaveSelectionsAsync(string databasePath,
+        IEnumerable<(int Id, PostSelectionState State, DateTimeOffset WriteTime)> selections, CancellationToken token = default) =>
+        Task.Run(() =>
+        {
+            using var connection = OpenConnection(databasePath, readOnly: false, create: false);
+            connection.RunInTransaction(() =>
+            {
+                foreach (var selection in selections)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (!Enum.IsDefined(selection.State))
+                        throw new ArgumentOutOfRangeException(nameof(selections), "选择状态无效。");
+                    var row = connection.Find<PostRow>(selection.Id);
+                    if (row is null || Time(row.WriteTime) != selection.WriteTime)
+                        throw new InvalidOperationException($"条目 {selection.Id} 的写入批次已变化或不存在，未保存选择状态。");
+                    if (connection.Update(new PostSelectionRow { Id = selection.Id, IsSelected = (int) selection.State }, typeof(PostSelectionRow)) is not 1)
+                        throw new InvalidOperationException($"条目 {selection.Id} 未保存选择状态。");
+                }
+                token.ThrowIfCancellationRequested();
+            });
+        }, token);
+
+    public static SQLiteConnection OpenConnection(string databasePath, bool readOnly = false, bool create = true)
+    {
+        var flags = readOnly ? SQLiteOpenFlags.ReadOnly : SQLiteOpenFlags.ReadWrite;
+        if (!readOnly && create)
+            flags |= SQLiteOpenFlags.Create;
+        var connection = new SQLiteConnection(databasePath, flags | SQLiteOpenFlags.FullMutex);
+        try
+        {
+            connection.BusyTimeout = TimeSpan.FromSeconds(30);
+            _ = connection.Execute("PRAGMA foreign_keys = ON");
+            return connection;
         }
-
-        CopyScalarValues(context, target, source);
-        return target;
-    }
-
-    private static TKey[] DistinctKeys<TKey>(IEnumerable<TKey> keys, IEqualityComparer<TKey>? comparer = null)
-        where TKey : notnull
-    {
-        return [.. keys.Distinct(comparer)];
-    }
-
-    private static Dictionary<TKey, TEntity> LoadDictionaryByKeys<TEntity, TKey>(
-        IQueryable<TEntity> source,
-        TKey[] keys,
-        Expression<Func<TEntity, TKey>> keySelector,
-        IEqualityComparer<TKey>? comparer = null)
-        where TEntity : class
-        where TKey : notnull
-    {
-        if (keys.Length is 0)
-            return comparer is null ? new() : new(comparer);
-
-        return WhereKeyIn(source, keySelector, keys)
-            .ToDictionary(keySelector.Compile(), comparer ?? EqualityComparer<TKey>.Default);
-    }
-
-    private static IQueryable<TEntity> WhereKeyIn<TEntity, TKey>(
-        IQueryable<TEntity> source,
-        Expression<Func<TEntity, TKey>> keySelector,
-        TKey[] keys)
-    {
-        var containsCall = Expression.Call(
-            typeof(Enumerable),
-            nameof(Enumerable.Contains),
-            [typeof(TKey)],
-            Expression.Constant(keys),
-            keySelector.Body);
-
-        return source.Where(Expression.Lambda<Func<TEntity, bool>>(containsCall, keySelector.Parameters));
-    }
-
-    private static void ReplaceCollection<TItem, TKey>(ICollection<TItem> collection, IEnumerable<TItem> desiredItems, Func<TItem, TKey> keySelector)
-        where TKey : notnull
-    {
-        var desired = desiredItems
-            .GroupBy(keySelector)
-            .ToDictionary(group => group.Key, group => group.First());
-        var existing = collection
-            .GroupBy(keySelector)
-            .ToDictionary(group => group.Key, group => group.First());
-
-        foreach (var existingItem in existing.Where(pair => !desired.ContainsKey(pair.Key)).Select(pair => pair.Value).ToArray())
-            _ = collection.Remove(existingItem);
-
-        foreach (var desiredItem in desired.Where(pair => !existing.ContainsKey(pair.Key)).Select(pair => pair.Value))
-            collection.Add(desiredItem);
-    }
-
-    private static void EnsureDirectory(string databasePath)
-    {
-        var directory = Path.GetDirectoryName(databasePath);
-        if (!string.IsNullOrWhiteSpace(directory))
-            _ = Directory.CreateDirectory(directory);
-    }
-
-    private static PostDbContext CreatePostDbContext(string databasePath)
-    {
-        var options = new DbContextOptionsBuilder<PostDbContext>()
-            .UseSqlite(new SqliteConnectionStringBuilder { DataSource = databasePath }.ToString())
-            .Options;
-        return new PostDbContext(options);
-    }
-
-    internal sealed class PostDbContext(DbContextOptions<PostDbContext> options) : DbContext(options)
-    {
-        public DbSet<Post> Posts => Set<Post>();
-
-        public DbSet<Author> Authors => Set<Author>();
-
-        public DbSet<Role> Roles => Set<Role>();
-
-        public DbSet<Thumbnail> Thumbnails => Set<Thumbnail>();
-
-        public DbSet<Tag> Tags => Set<Tag>();
-
-        public DbSet<Category> Categories => Set<Category>();
-
-        public DbSet<Medal> Medals => Set<Medal>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        catch
         {
-            _ = modelBuilder.Entity<Post>(entity =>
-            {
-                _ = entity.Property(post => post.Url).HasConversion(_UriConverter);
-                _ = entity.HasOne(post => post.DbAuthor)
-                    .WithMany()
-                    .HasForeignKey(post => post.DbAuthorId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                _ = entity.HasOne(post => post.DbThumbnail)
-                    .WithOne(thumbnail => thumbnail.DbPost)
-                    .HasForeignKey<Thumbnail>(thumbnail => thumbnail.DbPostId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                _ = entity.HasMany(post => post.DbTags)
-                    .WithMany();
-                _ = entity.HasMany(post => post.DbCats)
-                    .WithMany();
-            });
-
-            _ = modelBuilder.Entity<Author>(entity =>
-            {
-                _ = entity.Property(author => author.Url).HasConversion(_UriConverter);
-                _ = entity.Property(author => author.AvatarUrl).HasConversion(_UriConverter);
-                _ = entity.HasOne(author => author.DbRole)
-                    .WithMany()
-                    .HasForeignKey(author => author.DbRoleName)
-                    .OnDelete(DeleteBehavior.Restrict);
-                _ = entity.HasMany(author => author.DbMedals)
-                    .WithMany();
-            });
-
-            _ = modelBuilder.Entity<Thumbnail>(entity =>
-            {
-                _ = entity.Property(thumbnail => thumbnail.Url).HasConversion(_UriConverter);
-            });
-
-            _ = modelBuilder.Entity<Tag>(entity =>
-            {
-                _ = entity.Property(tag => tag.Url).HasConversion(_UriConverter);
-            });
-
-            _ = modelBuilder.Entity<Category>(entity =>
-            {
-                _ = entity.Property(category => category.Url).HasConversion(_UriConverter);
-            });
-
-            _ = modelBuilder.Entity<Medal>(entity =>
-            {
-                _ = entity.Property(medal => medal.ImgUrl).HasConversion(_UriConverter);
-            });
+            connection.Dispose();
+            throw;
         }
     }
+
+    private static Uri Uri(string value) => new(value, UriKind.RelativeOrAbsolute);
+
+    private static DateTimeOffset Time(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
+
+    private static string TextTime(DateTimeOffset value) => value.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFzzz", CultureInfo.InvariantCulture);
 }

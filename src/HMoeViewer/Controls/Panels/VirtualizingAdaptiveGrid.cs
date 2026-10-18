@@ -579,7 +579,7 @@ public class VirtualizingAdaptiveGrid : VirtualizingPanel, INavigableContainer, 
         container.SetCurrentValue(IsVisibleProperty, false);
         if (!_recyclePool.TryGetValue(recycleKey, out var pool))
         {
-            pool = new Stack<Control>();
+            pool = new();
             _recyclePool.Add(recycleKey, pool);
         }
 

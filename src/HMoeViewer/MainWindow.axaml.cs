@@ -32,11 +32,11 @@ public partial class MainWindow : Window
 
     private async void ChooseDatabase(object? sender, RoutedEventArgs e)
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        var files = await StorageProvider.OpenFilePickerAsync(new()
         {
             Title = "选择爬虫数据库",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("SQLite 数据库")
+            FileTypeFilter = [new("SQLite 数据库")
 {
 Patterns = ["*.db", "*.sqlite", "*.sqlite3"]
 }]

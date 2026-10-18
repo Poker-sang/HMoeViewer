@@ -18,16 +18,7 @@ public partial class MainViewModel
         try
         {
             if (IsDetail)
-            {
-                if (item!.Acceptance is null)
-                {
-                    if (Articles is null || CurrentBatch is not { } batch)
-                        throw new InvalidOperationException("正文服务尚未就绪。");
-                    var result = await Articles.AcceptAsync(batch, new(item.Post.Id, item.Title, item.Post.Url.AbsoluteUri));
-                    CompleteAcceptance(item, result);
-                }
-                _ = await MarkDetailAcceptedAsync(item);
-            }
+                _ = await AcceptDetailAsync(item!);
             else
                 _ = await SetReviewStageAsync(item!, TemporaryReviewStage.DownloadAccepted);
         }
@@ -35,6 +26,24 @@ public partial class MainViewModel
         {
             Status = $"接受失败：{ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// Records temporary detail acceptance before queuing download extraction.
+    /// The shared body queue owns extraction; leaving the article window does not cancel it.
+    /// </summary>
+    public async Task<bool> AcceptDetailAsync(PostItemViewModel item)
+    {
+        if (Articles is null || CurrentBatch is not { } batch)
+            throw new InvalidOperationException("正文服务尚未就绪。");
+        if (!await MarkDetailAcceptedAsync(item))
+            return false;
+        if (item.Acceptance is null)
+        {
+            Status = $"#{item.Post.Id} 已接受，下载链接已加入后台队列。";
+            QueueDownloadCollection(batch, item);
+        }
+        return true;
     }
 
     public Task<bool> MarkDetailAcceptedAsync(PostItemViewModel item) =>

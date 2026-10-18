@@ -51,7 +51,7 @@ public class BrowserControl : UserControl
         {
             var entry = new MenuItem { Header = link.Url };
             entry.Click += async (_, _) => await ViewModel.SendToClientAsync(link, owner);
-            menu.Items.Add(entry);
+            _ = menu.Items.Add(entry);
         }
         button.Flyout = menu;
         menu.ShowAt(button);

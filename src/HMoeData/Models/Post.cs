@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
 
 namespace HMoeData.Models;
 
-[Index(nameof(DateUnixTimeSeconds))]
-[Index(nameof(WriteTimeUnixTimeSeconds))]
 public class Post : IEquatable<Post>
 {
     [JsonPropertyName("id")]

@@ -207,7 +207,7 @@ public class MarkdownBox : MarkdownScrollViewer
         if (target?.TranslatePoint(default, this) is not { } point)
             return false;
 
-        ScrollValue = new Vector(
+        ScrollValue = new(
             ScrollValue.X,
             Math.Max(0, ScrollValue.Y + point.Y - AnchorScrollOffset));
 
@@ -484,7 +484,7 @@ public class MarkdownBox : MarkdownScrollViewer
         toolbar.Children.Add(langLabel);
         toolbar.Children.Add(copyButton);
 
-        root = new Grid();
+        root = new();
         root.Classes.Add(CodeBlockRootClass);
 
         root.Children.Add(textEditor);

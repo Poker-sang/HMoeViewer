@@ -35,7 +35,7 @@ public class DateInfoToDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
 {
     public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var dateInfo = JsonSerializer.Deserialize<DateInfo>(ref reader, options);
+        var dateInfo = JsonSerializer.Deserialize(ref reader, HMoeDataJsonContext.Default.DateInfo);
         return dateInfo.ToDateTimeOffset();
     }
 

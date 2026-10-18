@@ -19,23 +19,31 @@
             IsDynamicOverflowEnabled="False"
             OverflowButtonVisibility="Collapsed">
             <CommandBarButton
-                Command="{Binding AcceptCommand}"
-                Icon="{markup:SymbolIcon Checkmark}"
-                IsVisible="{Binding IsDetailReview}"
-                Label="接受 → 下一篇" />
-            <CommandBarButton
                 Command="{Binding RejectCommand}"
+                HotKey="Left"
                 Icon="{markup:SymbolIcon Dismiss}"
                 IsVisible="{Binding IsDetailReview}"
-                Label="不接受 → 下一篇" />
+                Label="不接受 → 下一篇"
+                ToolTip.Tip="不接受并进入下一篇（←）" />
+            <CommandBarButton
+                Command="{Binding AcceptCommand}"
+                HotKey="Right"
+                Icon="{markup:SymbolIcon Checkmark}"
+                IsVisible="{Binding IsDetailReview}"
+                Label="接受 → 下一篇"
+                ToolTip.Tip="接受并进入下一篇（→）" />
             <CommandBarButton
                 Command="{Binding LoadCommand}"
+                HotKey="F5"
                 Icon="{markup:SymbolIcon ArrowSync}"
-                Label="重试加载" />
+                Label="重试加载"
+                ToolTip.Tip="重试加载（F5）" />
             <CommandBarButton
                 Click="OpenOriginal"
+                HotKey="Ctrl+O"
                 Icon="{markup:SymbolIcon GlobeArrowUp}"
-                Label="外部打开" />
+                Label="外部打开"
+                ToolTip.Tip="外部打开（Ctrl+O）" />
         </CommandBar>
         <StackPanel DockPanel.Dock="Top" Spacing="{StaticResource SpacingSmall}">
             <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />

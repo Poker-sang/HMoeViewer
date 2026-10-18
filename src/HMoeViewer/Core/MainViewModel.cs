@@ -50,7 +50,7 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
     [ObservableProperty]
     public partial string Status { get; set; } = "请选择爬虫数据库，图片从同目录的 img 文件夹读取。";
 
-    public AdvancedObservableCollection<PostItemViewModel> DisplayedItems { get; } = new();
+    public AdvancedObservableCollection<PostItemViewModel> DisplayedItems { get; } = [];
 
     public int AllCount => _allItems.Count;
 
@@ -156,9 +156,6 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
             CacheAllArticlesCommand.NotifyCanExecuteChanged();
             FetchAllDownloadsCommand.NotifyCanExecuteChanged();
             SendAllToClientCommand.NotifyCanExecuteChanged();
-            if (Articles is not null && batch is { } cacheBatch)
-                foreach (var item in items.Where(i => i.IsSelected && !i.IsAccepted))
-                    Articles.QueueCache(cacheBatch, new(item.Post.Id, item.Title, item.Post.Url.AbsoluteUri));
             _knownStates.Clear();
             foreach (var item in items)
                 _knownStates.Add(item.Post.Id, (item.State, item.ReviewStage));
@@ -166,8 +163,8 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
             {
                 RestoreUndoHistory(changes);
                 // 已删除表示已进入下载后筛选，优先于详情筛选的取消记录。
-                BrowseMode = items.Any(item => item.State is PostSelectionState.Deleted || (item.ReviewStage & TemporaryReviewStage.BothAccepted) is not TemporaryReviewStage.None) ? BrowseMode.Download
-                    : items.Any(item => item.State is PostSelectionState.Deselected) ? BrowseMode.Detail
+                BrowseMode = items.Any(item => item.State is PostSelectionState.Deleted || item.ReviewStage.IsDownloadState) ? BrowseMode.Download
+                    : items.Any(item => item.State is PostSelectionState.Deselected || item.ReviewStage.Has(TemporaryReviewStage.DetailAccepted) /*在初始筛选也可以查看正文，所以不作为条件*/) ? BrowseMode.Detail
                     : BrowseMode.Brief;
             }
             HasChanges = false;
@@ -176,6 +173,15 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
             OnPropertyChanged(nameof(AllCount));
             OnPropertyChanged(nameof(SelectedCount));
             Status = posts.Count is 0 ? "数据库中没有可浏览的最新批次。" : $"已加载最新批次，共 {posts.Count} 条。";
+            if (Articles is not null && batch is { } cacheBatch)
+            {
+                // Rebuild background work from selection and cache, never from the active page.
+                // Body caching also resumes unfinished images when downloads already exist.
+                foreach (var item in items.Where(item => item.IsSelected))
+                    Articles.QueueCache(cacheBatch, new(item.Post.Id, item.Title, item.Post.Url.AbsoluteUri));
+                foreach (var item in items.Where(item => item is { IsSelected: true, IsAccepted: false }))
+                    QueueDownloadCollection(cacheBatch, item);
+            }
         }
         catch (Exception ex)
         {
@@ -237,9 +243,9 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
 
     private async Task HandleItemChangeAsync(PostItemViewModel item, bool resetReviewOnReselect = true)
     {
-        var before = _knownStates[item.Post.Id];
-        var stateChanged = before.State != item.State;
-        if (!stateChanged && before.ReviewStage == item.ReviewStage)
+        var (state, reviewStage) = _knownStates[item.Post.Id];
+        var stateChanged = state != item.State;
+        if (!stateChanged && reviewStage == item.ReviewStage)
             return;
         // Reselecting starts a fresh review; this reset belongs to the same undo operation.
         if (stateChanged && item.IsSelected && !_isUndoing && resetReviewOnReselect)
@@ -259,8 +265,8 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
             Articles.QueueCache(cacheBatch, new(item.Post.Id, item.Title, item.Post.Url.AbsoluteUri));
         if (!_isUndoing)
         {
-            var change = new SelectionChange(Guid.NewGuid(), item.Post.Id, before.State, item.State, DateTimeOffset.UtcNow,
-                BeforeReviewStage: before.ReviewStage, AfterReviewStage: item.ReviewStage);
+            var change = new SelectionChange(Guid.NewGuid(), item.Post.Id, state, item.State, DateTimeOffset.UtcNow,
+                BeforeReviewStage: reviewStage, AfterReviewStage: item.ReviewStage);
             _pendingHistory.Add(change);
             _undoChanges.Add(change);
         }
@@ -272,8 +278,8 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
             HasChanges = true;
             OnPropertyChanged(nameof(SelectedCount));
         }
-        if (stateChanged && !IsBrief || ((before.ReviewStage ^ item.ReviewStage) & TemporaryReviewStage.BothAccepted) is not TemporaryReviewStage.None)
-            RefreshFilter();
+        if (stateChanged && !IsBrief || ((reviewStage ^ item.ReviewStage) & TemporaryReviewStage.BothAccepted) is not TemporaryReviewStage.None)
+            RefreshFilter(clearEmptySearch: true);
         _ = FlushHistoryAsync();
         if (stateChanged && AutoSave)
             _ = await SaveAsync();
@@ -285,8 +291,6 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
         if (item is null || !CanRemove() || (IsDetail ? !item.IsPendingDetailReview : !item.IsPendingDownloadReview))
             return;
         item.State = BrowseMode is BrowseMode.Detail ? PostSelectionState.Deselected : PostSelectionState.Deleted;
-        if (MatchCount is 0 && SearchText.Length > 0)
-            SearchText = "";
     }
 
     [RelayCommand(CanExecute = nameof(CanSelectPost))]
@@ -297,8 +301,9 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
         item.IsSelected = true;
     }
 
-    public void RefreshFilter()
+    public void RefreshFilter(bool clearEmptySearch = false)
     {
+        var hadMatches = MatchCount > 0;
         var query = SearchText.Trim();
         using (DisplayedItems.DeferFiltersChange())
         {
@@ -312,10 +317,17 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
                 _ => i.IsSelected
             }) && Matches(i.Post, query), false));
         }
+        var displayIndex = 0;
+        foreach (var item in DisplayedItems)
+            item.DisplayIndex = displayIndex++;
         OnPropertyChanged(nameof(MatchCount));
         RemoveCommand.NotifyCanExecuteChanged();
         SelectPostCommand.NotifyCanExecuteChanged();
         TemporaryAcceptCommand.NotifyCanExecuteChanged();
+        // Only item operations that remove the last search result return to the full current mode.
+        // Typing an unmatched query or switching modes must preserve the user's search text.
+        if (clearEmptySearch && hadMatches && MatchCount is 0 && SearchText.Length > 0)
+            SearchText = "";
     }
 
     private static bool Matches(Post post, string query) => query.Length is 0

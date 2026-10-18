@@ -35,7 +35,7 @@ public sealed class ArticleImage : Border
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        _loading = new CancellationTokenSource();
+        _loading = new();
         LoadAsync(_loading.Token);
     }
 

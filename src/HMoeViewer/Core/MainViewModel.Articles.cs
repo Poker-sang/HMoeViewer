@@ -56,9 +56,11 @@ public partial class MainViewModel
         var failed = 0;
         string? lastError = null;
         IsBulkBusy = true;
-        await _articleBatchGate.WaitAsync();
+        var gateEntered = false;
         try
         {
+            await _articleBatchGate.WaitAsync();
+            gateEntered = true;
             for (var index = 0; index < items.Length; ++index)
             {
                 var item = items[index];
@@ -99,7 +101,33 @@ public partial class MainViewModel
         finally
         {
             IsBulkBusy = false;
-            _ = _articleBatchGate.Release();
+            if (gateEntered)
+                _ = _articleBatchGate.Release();
+        }
+    }
+
+    private void QueueDownloadCollection(SelectionBatch batch, PostItemViewModel item)
+    {
+        if (Articles is not { } articles)
+            return;
+        _ = CollectAsync();
+
+        async Task CollectAsync()
+        {
+            try
+            {
+                var result = await articles.QueueAcceptanceAsync(batch, new(item.Post.Id, item.Title, item.Post.Url.AbsoluteUri));
+                if (CurrentBatch == batch && _allItems.Contains(item))
+                {
+                    CompleteAcceptance(item, result);
+                    Status = result.Links.Count > 0 ? $"#{item.Post.Id} 下载链接已缓存。" : $"#{item.Post.Id} 未找到下载链接，可在下载筛选中重试。";
+                }
+            }
+            catch (Exception ex)
+            {
+                if (CurrentBatch == batch && _allItems.Contains(item))
+                    Status = $"#{item.Post.Id} 后台获取下载链接失败，可重试：{ex.Message}";
+            }
         }
     }
 

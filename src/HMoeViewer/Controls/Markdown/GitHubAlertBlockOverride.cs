@@ -86,7 +86,7 @@ internal sealed partial class GitHubAlertBlockOverride() : BlockOverride2("Block
             ? []
             : engine.ParseGamutElement(body + "\n", status).ToArray();
 
-        alert = new GitHubAlertElement(kind, title, children);
+        alert = new(kind, title, children);
         return true;
     }
 
@@ -137,10 +137,10 @@ internal sealed partial class GitHubAlertBlockOverride() : BlockOverride2("Block
         public GitHubAlertElement(string kind, string title, DocumentElement[] body)
         {
             _kind = kind;
-            _title = new CTextBlockElement([new CRun { Text = title }], "MarkdownAlertTitle");
+            _title = new([new CRun { Text = title }], "MarkdownAlertTitle");
             _body = body;
             _children = [_title, ..body];
-            _control = new Lazy<Border>(Create);
+            _control = new(Create);
         }
 
         public override Control Control => _control.Value;
@@ -263,7 +263,7 @@ internal sealed partial class GitHubAlertBlockOverride() : BlockOverride2("Block
 
                 SelectChild(elements[i], localFrom, localTo);
                 selected.Add(elements[i].Element);
-                localFrom = new Point(double.PositiveInfinity, double.PositiveInfinity);
+                localFrom = new(double.PositiveInfinity, double.PositiveInfinity);
             }
 
             selected.Reverse();
@@ -276,8 +276,8 @@ internal sealed partial class GitHubAlertBlockOverride() : BlockOverride2("Block
             Point to)
         {
             child.Element.Select(
-                new Point(from.X - child.Rect.X, from.Y - child.Rect.Y),
-                new Point(to.X - child.Rect.X, to.Y - child.Rect.Y));
+                new(from.X - child.Rect.X, from.Y - child.Rect.Y),
+                new(to.X - child.Rect.X, to.Y - child.Rect.Y));
         }
 
         private Border Create()

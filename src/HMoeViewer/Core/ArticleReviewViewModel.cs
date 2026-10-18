@@ -124,12 +124,10 @@ public partial class ArticleReviewViewModel : ObservableObject, IDisposable
         IsBusy = true;
         var accepted = false;
         var item = Current!;
-        Status = "正在扫描正文并本地识别二维码；正文无下载链接时继续获取下载页…";
+        Status = "正在接受此文章…";
         try
         {
-            var result = item.Acceptance ?? await _service.AcceptAsync(_batch, new(item.Post.Id, item.Title, item.Post.Url.AbsoluteUri), _closed.Token);
-            _owner.CompleteAcceptance(item, result);
-            accepted = await _owner.MarkDetailAcceptedAsync(item);
+            accepted = await _owner.AcceptDetailAsync(item);
             if (!accepted)
                 Status = _owner.Status;
         }
@@ -138,7 +136,7 @@ public partial class ArticleReviewViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Status = $"收集未完成，仍停留在本篇，可再次接受以重试：{ex.Message}";
+            Status = $"接受失败，可重试：{ex.Message}";
         }
         finally
         {

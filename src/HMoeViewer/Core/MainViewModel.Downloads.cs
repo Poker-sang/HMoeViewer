@@ -23,17 +23,23 @@ public partial class MainViewModel
     {
         if (!CanSendAllToClient() || CurrentBatch is not { } batch || Articles is not { } articles || ClientDownloads is not { } client)
             return;
-        var items = _allItems.Where(item => item.IsPendingDownloadReview).ToArray();
+        // Bulk sending skips recorded submissions; individual cards still allow resending.
+        var items = _allItems.Where(item => item.IsPendingDownloadReview && !item.IsDownloaded).ToArray();
         var sent = new Dictionary<(string Url, string? Code), ClientDownloadStatus>();
         IsSendingToClient = true;
         Status = "批量发送已排队，等待正文和下载链接获取完成。";
-        await _articleBatchGate.WaitAsync();
+        var gateEntered = false;
         try
         {
+            await _articleBatchGate.WaitAsync();
+            gateEntered = true;
             await articles.WaitForQueuedCacheAsync();
             for (var index = 0; index < items.Length; ++index)
             {
                 var item = items[index];
+                // Recheck after waiting: progress can change while background work runs.
+                if (item.IsDownloaded)
+                    continue;
                 Status = $"发送到客户端 {index + 1}/{items.Length}：{item.Title}";
                 try
                 {
@@ -95,7 +101,8 @@ public partial class MainViewModel
         }
         finally
         {
-            _ = _articleBatchGate.Release();
+            if (gateEntered)
+                _ = _articleBatchGate.Release();
             IsSendingToClient = false;
         }
     }

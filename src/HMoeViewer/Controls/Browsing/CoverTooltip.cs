@@ -15,7 +15,7 @@ public sealed class CoverTooltip
         var point = placement.Target.GetValue(_PointerPositionProperty);
         // 自定义回调的锚点属于窗口坐标系，不能使用卡片内部坐标。
         // 上下各留 50px，翻转到鼠标下方时也能保留相同的距离。
-        placement.AnchorRectangle = new Rect(point - new Vector(0, 50), new Size(1, 100));
+        placement.AnchorRectangle = new(point - new Vector(0, 50), new Size(1, 100));
         placement.Anchor = PopupAnchor.Top;
         placement.Gravity = PopupGravity.Top;
         placement.Offset = default;

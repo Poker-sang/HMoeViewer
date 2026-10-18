@@ -422,7 +422,7 @@ public class AdvancedObservableCollection<T>
             }
             case NotifyCollectionChangedAction.Move:
             {
-                if (e.OldStartingIndex >= 0 && e.NewStartingIndex >= 0 && e.NewItems is [T item])
+                if (e is { OldStartingIndex: >= 0, NewStartingIndex: >= 0, NewItems: [T item] })
                     HandleItemMoved(e.OldStartingIndex, e.NewStartingIndex, item);
                 else
                     HandleSourceChanged();
@@ -433,7 +433,7 @@ public class AdvancedObservableCollection<T>
             {
                 DetachPropertyChangedHandler(e.OldItems);
                 AttachPropertyChangedHandler(e.NewItems);
-                if (e.OldStartingIndex >= 0 && e.OldItems is [T oldItem] && e.NewItems is [T newItem])
+                if (e is { OldStartingIndex: >= 0, OldItems: [T oldItem], NewItems: [T newItem] })
                     HandleItemReplaced(e.OldStartingIndex, oldItem, newItem);
                 else
                     HandleSourceChanged();
@@ -626,6 +626,6 @@ public class AdvancedObservableCollection<T>
 
 file static class EventArgsCache
 {
-    internal static readonly PropertyChangedEventArgs CountPropertyChanged = new PropertyChangedEventArgs(nameof(ICollection<>.Count));
-    internal static readonly NotifyCollectionChangedEventArgs ResetCollectionChanged = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
+    internal static readonly PropertyChangedEventArgs CountPropertyChanged = new(nameof(ICollection<>.Count));
+    internal static readonly NotifyCollectionChangedEventArgs ResetCollectionChanged = new(NotifyCollectionChangedAction.Reset);
 }

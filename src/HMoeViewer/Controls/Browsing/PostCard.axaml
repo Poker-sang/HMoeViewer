@@ -48,6 +48,9 @@
                             Opacity="0.4"
                             Text="无缩略图" />
                         <local:ThumbnailImage FilePath="{Binding ThumbnailPath}" Stretch="UniformToFill" />
+                        <Border Classes="cover-index">
+                            <TextBlock FontSize="11" Foreground="White" Text="{Binding DisplayIndex}" />
+                        </Border>
                     </Grid>
                     <SelectableTextBlock
                         Grid.Row="1"

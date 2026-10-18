@@ -10,6 +10,10 @@ public sealed partial class PostItemViewModel(HMoeData.Models.Post post) : Obser
 {
     public HMoeData.Models.Post Post { get; } = post;
 
+    /// <summary>Zero-based position in the current filtered display; never persisted.</summary>
+    [ObservableProperty]
+    public partial int DisplayIndex { get; set; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPendingDetailReview), nameof(IsPendingDownloadReview), nameof(IsViewed), nameof(IsDownloaded))]
     public partial TemporaryReviewStage ReviewStage { get; set; }

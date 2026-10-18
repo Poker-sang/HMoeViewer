@@ -36,7 +36,7 @@ public sealed class Extractor(IBrowserContext browser, ResourceFetcher fetcher, 
             // A known download destination is already the result. Commit its URL locally so a slow or
             // unreachable provider cannot hide a JavaScript popup's address behind a navigation timeout.
             // Rendering images is unnecessary here; QR bytes are fetched separately by ResourceFetcher.
-            await browser.RouteAsync("**/*", captureDownload).ConfigureAwait(false);
+            _ = await browser.RouteAsync("**/*", captureDownload).ConfigureAwait(false);
             if (cachedBody is not null)
             {
                 await ScanHtmlAsync(cachedBody, post.Url, ContentSelector, result, null, token).ConfigureAwait(false);

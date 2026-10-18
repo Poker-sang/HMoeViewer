@@ -61,7 +61,7 @@ internal sealed class RubyInline(string body, string annotation) : CInline
         public override void Render(DrawingContext context)
         {
             if (owner.Background is not null)
-                context.FillRectangle(owner.Background, new Rect(Left, Top, Width, Height));
+                context.FillRectangle(owner.Background, new(Left, Top, Width, Height));
 
             var foreground = owner.ResolveForeground();
             layout.Annotation.Draw(context, owner.Typeface, layout.AnnotationFontSize, foreground, Left, Top, Width);
@@ -71,10 +71,10 @@ internal sealed class RubyInline(string body, string annotation) : CInline
             var pen = new Pen(foreground, Math.Max(1, owner.FontSize / 16));
 
             if (owner.IsUnderline)
-                context.DrawLine(pen, new Point(Left, baseline + pen.Thickness), new Point(Left + Width, baseline + pen.Thickness));
+                context.DrawLine(pen, new(Left, baseline + pen.Thickness), new(Left + Width, baseline + pen.Thickness));
 
             if (owner.IsStrikethrough)
-                context.DrawLine(pen, new Point(Left, Top + layout.BodyTop + (layout.Body.Height * 0.55)), new Point(Left + Width, Top + layout.BodyTop + (layout.Body.Height * 0.55)));
+                context.DrawLine(pen, new(Left, Top + layout.BodyTop + (layout.Body.Height * 0.55)), new(Left + Width, Top + layout.BodyTop + (layout.Body.Height * 0.55)));
         }
 
         public override TextPointer CalcuatePointerFrom(double x, double y)
@@ -157,7 +157,7 @@ internal sealed class RubyInline(string body, string annotation) : CInline
             var annotationFontSize = Math.Max(1, owner.FontSize * AnnotationScale);
             var gap = Math.Max(1, owner.FontSize * GapScale);
 
-            return new RubyLayout(
+            return new(
                 MeasuredText.Create(owner.Body, owner.Typeface, owner.FontSize, owner.Foreground),
                 MeasuredText.Create(owner.Annotation, owner.Typeface, annotationFontSize, owner.Foreground),
                 annotationFontSize,
@@ -195,7 +195,7 @@ internal sealed class RubyInline(string body, string annotation) : CInline
                     CreateFormattedText(element, typeface, fontSize, foreground).WidthIncludingTrailingWhitespace))
                 .ToArray();
 
-            return new MeasuredText(text, full.Height, full.Baseline, elements);
+            return new(text, full.Height, full.Baseline, elements);
         }
 
         public void Draw(
@@ -235,7 +235,7 @@ internal sealed class RubyInline(string body, string annotation) : CInline
             double left,
             double top)
         {
-            context.DrawText(CreateFormattedText(text, typeface, fontSize, foreground), new Point(left, top));
+            context.DrawText(CreateFormattedText(text, typeface, fontSize, foreground), new(left, top));
         }
 
         private static FormattedText CreateFormattedText(

@@ -62,13 +62,7 @@ public class HMoeSession : IAsyncDisposable
     {
         _playwright = await Playwright.CreateAsync();
 
-        var userDataDir = Path.Combine(
-#if DEBUG
-            @"D:\HMoeWebCrawler",
-#else
-            Environment.CurrentDirectory,
-#endif
-            "browser-data");
+        var userDataDir = StoragePaths.BrowserProfileDirectory;
 
         Directory.CreateDirectory(userDataDir);
 

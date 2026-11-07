@@ -1,0 +1,36 @@
+<ContentPage
+    x:Class="HMoeViewer.Pages.SettingsPage"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    x:DataType="core:MainViewModel"
+    Header="设置">
+    <!-- Constrain the viewport so smooth scrolling does not reposition centered content independently of hit testing. -->
+    <ScrollViewer MaxWidth="832" HorizontalAlignment="Stretch">
+        <StackPanel Margin="16" Spacing="{StaticResource SpacingMedium}">
+            <TextBlock FontSize="24" FontWeight="SemiBold" Text="设置" />
+            <TextBlock FontWeight="SemiBold" Text="数据库" />
+            <TextBox
+                VerticalContentAlignment="Center"
+                PlaceholderText="current.db 路径"
+                Text="{Binding DatabasePath}" />
+            <CommandBar
+                HorizontalAlignment="Left"
+                DefaultLabelPosition="Right"
+                IsDynamicOverflowEnabled="False"
+                OverflowButtonVisibility="Collapsed">
+                <CommandBarButton
+                    Click="ChooseDatabase"
+                    Icon="{markup:SymbolIcon DatabaseArrowUp}"
+                    IsEnabled="{Binding !IsLoading}"
+                    Label="选择数据库" />
+                <CommandBarButton
+                    Command="{Binding LoadCommand}"
+                    Icon="{markup:SymbolIcon ArrowSync}"
+                    Label="加载 / 刷新" />
+            </CommandBar>
+            <ToggleSwitch Content="自动保存" IsChecked="{Binding AutoSave}" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentPage>

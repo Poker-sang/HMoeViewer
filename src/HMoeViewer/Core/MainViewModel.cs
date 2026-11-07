@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HMoeData;
 using HMoeData.Models;
 using HMoeViewer.AdvancedObservableCollection;
 using HMoeViewer.Extraction;
@@ -21,9 +22,7 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
     private long _revision;
 
     [ObservableProperty]
-    public partial string DatabasePath { get; set; } = OperatingSystem.IsWindows()
-        ? @"D:\HMoeWebCrawler\current.db"
-        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "HMoeWebCrawler", "current.db");
+    public partial string DatabasePath { get; set; } = StoragePaths.DatabasePath;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsBrief), nameof(IsDownload), nameof(IsDetail), nameof(IsReview), nameof(IsReselectMode))]
@@ -248,7 +247,7 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
         if (!stateChanged && reviewStage == item.ReviewStage)
             return;
         // Reselecting starts a fresh review; this reset belongs to the same undo operation.
-        if (stateChanged && item.IsSelected && !_isUndoing && resetReviewOnReselect)
+        if (stateChanged && item.IsSelected && !_isReplayingHistory && resetReviewOnReselect)
         {
             _isApplyingState = true;
             try
@@ -263,12 +262,13 @@ public partial class MainViewModel(IPostRepository repository, ISelectionHistory
         _knownStates[item.Post.Id] = (item.State, item.ReviewStage);
         if (stateChanged && item.IsSelected && Articles is not null && CurrentBatch is { } cacheBatch)
             Articles.QueueCache(cacheBatch, new(item.Post.Id, item.Title, item.Post.Url.AbsoluteUri));
-        if (!_isUndoing)
+        if (!_isReplayingHistory)
         {
             var change = new SelectionChange(Guid.NewGuid(), item.Post.Id, state, item.State, DateTimeOffset.UtcNow,
                 BeforeReviewStage: reviewStage, AfterReviewStage: item.ReviewStage);
             _pendingHistory.Add(change);
-            _undoChanges.Add(change);
+            ClearRedoHistory();
+            AddUndoChange(change, item.Title);
         }
         UndoCommand.NotifyCanExecuteChanged();
         SaveCommand.NotifyCanExecuteChanged();

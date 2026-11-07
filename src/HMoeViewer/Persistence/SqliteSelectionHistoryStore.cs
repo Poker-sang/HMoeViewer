@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HMoeData;
 using HMoeData.Models;
 using HMoeData.Persistence;
 using HMoeViewer.Core;
@@ -51,7 +52,8 @@ public sealed class SqliteSelectionHistoryStore : ISelectionHistoryStore
                 if (connection.Find<BatchRow>(1) is null)
                     _ = connection.Insert(new BatchRow
                     {
-                        Id = 1, SourceDatabasePath = Path.GetFullPath(batch.DatabasePath),
+                        Id = 1,
+                        SourceDatabasePath = Path.GetFullPath(batch.DatabasePath),
                         SourceWriteTime = batch.WriteTime.ToString("O", CultureInfo.InvariantCulture)
                     }, typeof(BatchRow));
                 var sequence = connection.Table<HistoryRow>().OrderByDescending(row => row.Sequence).FirstOrDefault()?.Sequence ?? 0;
@@ -69,11 +71,15 @@ public sealed class SqliteSelectionHistoryStore : ISelectionHistoryStore
                         continue;
                     _ = connection.Insert(new HistoryRow
                     {
-                        Sequence = ++sequence, OperationId = operation, PostId = change.PostId,
-                        BeforeState = change.Before, AfterState = change.After,
+                        Sequence = ++sequence,
+                        OperationId = operation,
+                        PostId = change.PostId,
+                        BeforeState = change.Before,
+                        AfterState = change.After,
                         ChangedAt = change.ChangedAt.ToString("O", CultureInfo.InvariantCulture),
                         RevertsOperationId = change.RevertsOperationId?.ToString("D"),
-                        BeforeReviewStage = change.BeforeReviewStage, AfterReviewStage = change.AfterReviewStage
+                        BeforeReviewStage = change.BeforeReviewStage,
+                        AfterReviewStage = change.AfterReviewStage
                     }, typeof(HistoryRow));
                 }
                 token.ThrowIfCancellationRequested();
@@ -121,7 +127,7 @@ public sealed class SqliteSelectionHistoryStore : ISelectionHistoryStore
         if (OperatingSystem.IsWindows())
             source = source.ToUpperInvariant();
         var databaseKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)));
-        return Path.Combine(Path.GetTempPath(), "HMoeViewer", "history", databaseKey,
+        return Path.Combine(StoragePaths.HistoryDirectory, databaseKey,
             batch.WriteTime.UtcTicks.ToString(CultureInfo.InvariantCulture) + ".db");
     }
 

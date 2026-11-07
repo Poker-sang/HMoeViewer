@@ -1,0 +1,93 @@
+<ContentPage
+    x:Class="HMoeViewer.Pages.UndoHistoryPage"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:HMoeViewer.Core"
+    xmlns:markup="using:FluentIcons.Avalonia.Markup"
+    x:DataType="core:MainViewModel"
+    Header="撤回记录">
+    <ContentPage.Resources>
+        <DataTemplate x:Key="HistoryEntryTemplate" x:DataType="core:UndoHistoryEntry">
+            <StackPanel Margin="4" Spacing="{StaticResource SpacingSmall}">
+                <DockPanel HorizontalSpacing="{StaticResource SpacingMedium}">
+                    <TextBlock DockPanel.Dock="Right" Opacity="0.65" Text="{Binding TimeText}" />
+                    <TextBlock DockPanel.Dock="Left" Opacity="0.65" Text="{Binding PostId, StringFormat='#{0}'}" />
+                    <SelectableTextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
+                </DockPanel>
+                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+    </ContentPage.Resources>
+    <DockPanel Margin="8" VerticalSpacing="{StaticResource SpacingMedium}">
+        <StackPanel DockPanel.Dock="Top" Spacing="{StaticResource SpacingSmall}">
+            <TextBlock FontSize="20" FontWeight="SemiBold" Text="撤回与恢复" />
+            <TextBlock Opacity="0.65" Text="每栏最上方是下一步操作；产生新操作后清空恢复栈。记录保存在当前批次的临时数据库中。" TextWrapping="Wrap" />
+        </StackPanel>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="{StaticResource SpacingMedium}">
+            <DockPanel Grid.Column="0" VerticalSpacing="{StaticResource SpacingSmall}">
+                <DockPanel DockPanel.Dock="Top" HorizontalSpacing="{StaticResource SpacingSmall}">
+                    <CommandBar
+                        VerticalAlignment="Center"
+                        DefaultLabelPosition="Right"
+                        DockPanel.Dock="Right"
+                        IsDynamicOverflowEnabled="False"
+                        OverflowButtonVisibility="Collapsed">
+                        <CommandBarButton
+                            Command="{Binding UndoCommand}"
+                            Icon="{markup:SymbolIcon ArrowUndo}"
+                            Label="撤回上一步"
+                            ToolTip.Tip="撤回（Ctrl+Z）" />
+                    </CommandBar>
+                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding UndoHistory.Count, StringFormat='撤回栈 · {0}'}" />
+                </DockPanel>
+                <Panel>
+                    <ListBox ItemsSource="{Binding UndoHistory}" ItemTemplate="{StaticResource HistoryEntryTemplate}">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListBox.Styles>
+                    </ListBox>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding !UndoHistory.Count}"
+                        Opacity="0.6"
+                        Text="当前没有可撤回的操作" />
+                </Panel>
+            </DockPanel>
+            <DockPanel Grid.Column="1" VerticalSpacing="{StaticResource SpacingSmall}">
+                <DockPanel DockPanel.Dock="Top" HorizontalSpacing="{StaticResource SpacingSmall}">
+                    <CommandBar
+                        VerticalAlignment="Center"
+                        DefaultLabelPosition="Right"
+                        DockPanel.Dock="Right"
+                        IsDynamicOverflowEnabled="False"
+                        OverflowButtonVisibility="Collapsed">
+                        <CommandBarButton
+                            Command="{Binding RedoCommand}"
+                            Icon="{markup:SymbolIcon ArrowRedo}"
+                            Label="恢复上一步"
+                            ToolTip.Tip="恢复（Ctrl+Y）" />
+                    </CommandBar>
+                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding RedoHistory.Count, StringFormat='恢复栈 · {0}'}" />
+                </DockPanel>
+                <Panel>
+                    <ListBox ItemsSource="{Binding RedoHistory}" ItemTemplate="{StaticResource HistoryEntryTemplate}">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListBox.Styles>
+                    </ListBox>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding !RedoHistory.Count}"
+                        Opacity="0.6"
+                        Text="当前没有可恢复的操作" />
+                </Panel>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</ContentPage>

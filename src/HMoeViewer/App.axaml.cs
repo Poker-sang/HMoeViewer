@@ -1,10 +1,9 @@
-using System;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using HMoeData;
 using HMoeViewer.Core;
 using HMoeViewer.Downloads;
 using HMoeViewer.Persistence;
@@ -28,7 +27,7 @@ public partial class App : Application
         {
             IArticleReviewService articles;
             IClientDownloadService downloads;
-            var profile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HMoeViewer", "baidu-browser-data");
+            var profile = StoragePaths.BaiduProfileDirectory;
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 var localArticles = new ArticleReviewService();

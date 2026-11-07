@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using HMoeData;
 using HMoeData.Models;
 using HMoeData.Persistence;
 using HMoeWebCrawler;
@@ -16,12 +17,7 @@ ConsoleLogger.Header("HMoe Web Crawler");
 ConsoleLogger.Info("正在加载运行配置...");
 
 // 记录日志路径
-var loggerPath =
-#if DEBUG
-    @"D:\HMoeWebCrawler";
-#else
-    Environment.CurrentDirectory;
-#endif
+var loggerPath = StoragePaths.RootDirectory;
 var loggerImgPath = Path.Combine(loggerPath, "img");
 var loggerDbPath = Path.Combine(loggerPath, "current.db");
 var loggerLastDbPath = Path.Combine(loggerPath, "last.db");

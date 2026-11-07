@@ -1,7 +1,4 @@
-using System.Linq;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using HMoeViewer.Core;
 
 namespace HMoeViewer;
@@ -28,23 +25,6 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         if (!string.IsNullOrWhiteSpace(databasePath))
             viewModel.DatabasePath = databasePath;
-    }
-
-    private async void ChooseDatabase(object? sender, RoutedEventArgs e)
-    {
-        var files = await StorageProvider.OpenFilePickerAsync(new()
-        {
-            Title = "选择爬虫数据库",
-            AllowMultiple = false,
-            FileTypeFilter = [new("SQLite 数据库")
-{
-Patterns = ["*.db", "*.sqlite", "*.sqlite3"]
-}]
-        });
-        if (files.FirstOrDefault()?.TryGetLocalPath() is not { } path)
-            return;
-        ViewModel.DatabasePath = path;
-        await ViewModel.LoadAsync();
     }
 
     private async void SaveBeforeClosing(object? sender, WindowClosingEventArgs e)

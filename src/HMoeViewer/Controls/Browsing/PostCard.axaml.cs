@@ -76,10 +76,8 @@ public partial class PostCard : BrowserControl
     {
         if (IsActionControl(e.Source) || sender is not Border { DataContext: PostItemViewModel item })
             return;
-        if (ViewModel.BrowseMode is BrowseMode.Detail or BrowseMode.Download)
+        if (!ViewModel.IsBrief)
             await OpenReviewAsync(item);
-        else if (!ViewModel.IsBrief)
-            await OpenUrlAsync(item.Post.Url, item);
         else
             item.IsSelected = !item.IsSelected;
     }

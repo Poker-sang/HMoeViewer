@@ -28,4 +28,4 @@ Copyright (c) Pixeval. Licensed under GPL-3.0; see `Pixeval.LICENSE`. Local chan
 
 ## SmoothScroll.Avalonia
 
-`src/lib/SmoothScroll.Avalonia` is a Git submodule from https://github.com/Poker-sang/SmoothScroll.Avalonia.git, pinned to the same revision used by Pixeval. Licensed under MIT; see `src/lib/SmoothScroll.Avalonia/LICENSE.txt`. The parent repository's `src/lib/Directory.Build.targets` uses Avalonia 12.1.3 with upstream central package management and disables implicit usings without modifying the submodule. The application targets .NET 10. `SmoothScroll.Usings.cs` supplies the upstream sources' required imports. The application uses `ScrollViewerSmoothTheme` and its `ScrollViewerPresenter`, as Pixeval does.
+The application references the `Shirasagi0012.SmoothScroll.Avalonia` NuGet package, which includes `Shirasagi0012.SmoothScroll.Avalonia.Interaction` as a dependency. Source: https://github.com/Shirasagi0012/SmoothScroll.Avalonia. Licensed under MIT; see `SmoothScroll.LICENSE.txt`. The application uses `ScrollViewerSmoothTheme` and its `ScrollViewerPresenter`.

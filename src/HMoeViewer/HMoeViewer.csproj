@@ -17,16 +17,16 @@
 		</PackageReference>
 		<PackageReference Include="FluentIcons.Avalonia" Version="2.1.343" />
 		<PackageReference Include="Markdown.Avalonia" Version="12.0.0-a3" />
+		<PackageReference Include="Shirasagi0012.SmoothScroll.Avalonia" Version="12.0.0.1" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<ProjectReference Include="../HMoeViewer.Extraction/HMoeViewer.Extraction.csproj" />
 		<ProjectReference Include="../HMoeViewer.Downloads/HMoeViewer.Downloads.csproj" />
 		<ProjectReference Include="../HMoeData/HMoeData.csproj" />
-		<ProjectReference Include="../lib/SmoothScroll.Avalonia/src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj" />
 		<AvaloniaResource Include="Assets/logo.jpg" />
 		<None Include="../../ThirdParty/NOTICES.md" Link="ThirdParty/NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
 		<None Include="../../ThirdParty/Pixeval.LICENSE" Link="ThirdParty/Pixeval.LICENSE" CopyToOutputDirectory="PreserveNewest" />
-		<None Include="../lib/SmoothScroll.Avalonia/LICENSE.txt" Link="ThirdParty/SmoothScroll.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="../../ThirdParty/SmoothScroll.LICENSE.txt" Link="ThirdParty/SmoothScroll.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 	<Target Name="PublishBrowserWorker" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(SkipBrowserWorkerPublish)' != 'true'">
 		<!-- Build the browser host separately: its .NET runtime is shipped beside the native viewer. -->

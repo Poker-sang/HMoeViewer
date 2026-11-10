@@ -5,8 +5,4 @@
   <Project Path="src/HMoeViewer.Extraction/HMoeViewer.Extraction.csproj" />
   <Project Path="src/HMoeData/HMoeData.csproj" />
   <Project Path="src/HMoeViewer/HMoeViewer.csproj" />
-  <Folder Name="/lib/">
-    <Project Path="src/lib/SmoothScroll.Avalonia/src/SmoothScroll.Avalonia.Controls/SmoothScroll.Avalonia.Controls.csproj" />
-    <Project Path="src/lib/SmoothScroll.Avalonia/src/SmoothScroll.Avalonia.Interaction/SmoothScroll.Avalonia.Interaction.csproj" />
-  </Folder>
 </Solution>

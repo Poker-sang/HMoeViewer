@@ -1,12 +1,19 @@
 using System;
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.Input;
 using HMoeData.Models;
 
 namespace HMoeViewer.Core;
 
-/// <summary>撤回栈的只读显示项，不向永久数据库添加字段。</summary>
-public sealed class UndoHistoryEntry(SelectionChange change, string title, bool isRedo = false)
+/// <summary>撤回或恢复记录的显示项及单条操作命令；执行时校验当前状态，不向永久数据库添加字段。</summary>
+public sealed class UndoHistoryEntry(SelectionChange change, string title, Action replay, bool isRedo = false)
 {
+    public IRelayCommand ReplayCommand { get; } = new RelayCommand(replay);
+
+    public bool IsRedo => isRedo;
+
+    public string ActionLabel => isRedo ? "恢复此条" : "撤回此条";
+
     public int PostId => change.PostId;
 
     public string Title { get; } = title;
